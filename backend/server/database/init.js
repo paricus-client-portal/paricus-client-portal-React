@@ -1,5 +1,6 @@
 import pg from 'pg';
 import dotenv from 'dotenv';
+import log from '../utils/console-logger.js';
 
 dotenv.config();
 
@@ -135,9 +136,9 @@ export async function initializeDatabase() {
       `, [adminRole.rows[0].id]);
     }
 
-    console.log('Database schema initialized successfully');
+    log.info('Database schema initialized successfully');
   } catch (error) {
-    console.error('Error initializing database:', error);
+    log.error('Error initializing database:', error);
     throw error;
   } finally {
     client.release();
@@ -149,6 +150,6 @@ export async function query(text, params) {
   const start = Date.now();
   const res = await pool.query(text, params);
   const duration = Date.now() - start;
-  console.log('Executed query', { text, duration, rows: res.rowCount });
+  log.debug('Executed query', { duration, rows: res.rowCount });
   return res;
 }

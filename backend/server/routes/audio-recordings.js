@@ -9,9 +9,10 @@ import {
   getCompanyNameFromTags,
   testConnection
 } from '../services/mssql.js';
-import { generateAudioDownloadUrl } from '../services/s3.js';
+import { generateAudioDownloadUrl, isS3Configured } from '../services/s3.js';
 import { prisma } from '../database/prisma.js';
 import NodeCache from 'node-cache';
+import log from '../utils/console-logger.js';
 
 const router = express.Router();
 
@@ -69,20 +70,20 @@ async function getCompanyNameByClientId(clientId) {
 router.get('/test', authenticateToken, requirePermission('admin_audio_recordings'), async (req, res) => {
   try {
     // Debug: Log environment variables
-    console.log('MSSQL Environment Variables:');
-    console.log('MSSQL_SERVER:', process.env.MSSQL_SERVER);
-    console.log('MSSQL_USER:', process.env.MSSQL_USER);
-    console.log('MSSQL_PASSWORD:', process.env.MSSQL_PASSWORD ? '***SET***' : 'NOT SET');
-    console.log('MSSQL_DATABASE:', process.env.MSSQL_DATABASE);
-    console.log('MSSQL_PORT:', process.env.MSSQL_PORT);
+    log.info('MSSQL Environment Variables:');
+    log.info('MSSQL_SERVER:', process.env.MSSQL_SERVER);
+    log.info('MSSQL_USER:', process.env.MSSQL_USER);
+    log.info('MSSQL_PASSWORD:', process.env.MSSQL_PASSWORD ? '***SET***' : 'NOT SET');
+    log.info('MSSQL_DATABASE:', process.env.MSSQL_DATABASE);
+    log.info('MSSQL_PORT:', process.env.MSSQL_PORT);
 
     const result = await testConnection();
     res.json(result);
   } catch (error) {
-    console.error('Error testing SQL Server connection:', error);
+    log.error('Error testing SQL Server connection:', error);
     res.status(500).json({
       error: 'Failed to test database connection',
-      message: error.message
+      message: 'An internal error occurred'
     });
   }
 });
@@ -101,7 +102,7 @@ router.get('/', authenticateToken, async (req, res) => {
     return res.status(403).json({ error: 'Permission denied. You need admin_audio_recordings or view_interactions permission.' });
   }
   const startTime = Date.now();
-  console.log('[AUDIO-RECORDINGS] Request received');
+  log.info('[AUDIO-RECORDINGS] Request received');
 
   try {
     const {
@@ -121,7 +122,7 @@ router.get('/', authenticateToken, async (req, res) => {
     const limitNum = parseInt(limit);
     const offset = (pageNum - 1) * limitNum;
 
-    console.log(`[AUDIO-RECORDINGS] Params: page=${pageNum}, limit=${limitNum}, offset=${offset}`);
+    log.info(`[AUDIO-RECORDINGS] Params: page=${pageNum}, limit=${limitNum}, offset=${offset}`);
 
     // Build filters object
     const filters = {};
@@ -142,24 +143,24 @@ router.get('/', authenticateToken, async (req, res) => {
       const userCompany = await getCompanyNameByClientId(req.user.clientId);
       if (userCompany) {
         filters.company = userCompany;
-        console.log(`[AUDIO-RECORDINGS] Auto-filtering by client company: ${userCompany} (clientId: ${req.user.clientId})`);
+        log.info(`[AUDIO-RECORDINGS] Auto-filtering by client company: ${userCompany} (clientId: ${req.user.clientId})`);
       } else {
-        console.warn(`[AUDIO-RECORDINGS] No company mapping found for clientId: ${req.user.clientId}`);
+        log.warn(`[AUDIO-RECORDINGS] No company mapping found for clientId: ${req.user.clientId}`);
       }
     } else if (company) {
       // BPO Admin can manually filter by company
       filters.company = company;
-      console.log(`[AUDIO-RECORDINGS] BPO Admin manually filtering by company: ${company}`);
+      log.info(`[AUDIO-RECORDINGS] BPO Admin manually filtering by company: ${company}`);
     }
 
-    console.log('[AUDIO-RECORDINGS] Filters:', JSON.stringify(filters));
-    console.log('[AUDIO-RECORDINGS] Querying SQL Server...');
+    log.info('[AUDIO-RECORDINGS] Filters:', JSON.stringify(filters));
+    log.info('[AUDIO-RECORDINGS] Querying SQL Server...');
 
     const queryStartTime = Date.now();
     const result = await getCallRecordings(filters, limitNum, offset);
     const queryDuration = Date.now() - queryStartTime;
 
-    console.log(`[AUDIO-RECORDINGS] Query completed in ${queryDuration}ms, found ${result.recordings.length} recordings`);
+    log.info(`[AUDIO-RECORDINGS] Query completed in ${queryDuration}ms, found ${result.recordings.length} recordings`);
 
     // Don't generate URLs upfront - send recordings without URLs for faster loading
     const recordings = result.recordings.map(recording => ({
@@ -172,7 +173,7 @@ router.get('/', authenticateToken, async (req, res) => {
     }));
 
     const totalDuration = Date.now() - startTime;
-    console.log(`[AUDIO-RECORDINGS] Total request time: ${totalDuration}ms`);
+    log.info(`[AUDIO-RECORDINGS] Total request time: ${totalDuration}ms`);
 
     res.json({
       recordings: recordings,
@@ -185,7 +186,7 @@ router.get('/', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     const totalDuration = Date.now() - startTime;
-    console.error(`[AUDIO-RECORDINGS] Error after ${totalDuration}ms:`, error);
+    log.error(`[AUDIO-RECORDINGS] Error after ${totalDuration}ms:`, error);
 
     // Check if it's a configuration error
     if (error.message.includes('not configured')) {
@@ -197,7 +198,7 @@ router.get('/', authenticateToken, async (req, res) => {
 
     res.status(500).json({
       error: 'Failed to fetch audio recordings',
-      message: error.message
+      message: 'An internal error occurred'
     });
   }
 });
@@ -215,12 +216,12 @@ router.get('/:interactionId/audio-url', authenticateToken, checkAudioRecordingsP
     const cachedUrl = audioUrlCache.get(cacheKey);
 
     if (cachedUrl) {
-      console.log(`[AUDIO-URL] Cache hit for ${interactionId}`);
+      log.info(`[AUDIO-URL] Cache hit for ${interactionId}`);
 
       // Log audio playback access with IP address
       const ipAddress = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress;
 
-      console.log(`[AUDIO-PLAYBACK-LOG] Creating log entry for interactionId: ${interactionId}, userId: ${req.user.id}, IP: ${ipAddress}`);
+      log.info(`[AUDIO-PLAYBACK-LOG] Creating log entry for interactionId: ${interactionId}, userId: ${req.user.id}, IP: ${ipAddress}`);
 
       try {
         const logEntry = await prisma.log.create({
@@ -233,16 +234,16 @@ router.get('/:interactionId/audio-url', authenticateToken, checkAudioRecordingsP
             ipAddress: ipAddress
           }
         });
-        console.log(`[AUDIO-PLAYBACK-LOG] Log created successfully:`, logEntry.id);
+        log.info(`[AUDIO-PLAYBACK-LOG] Log created successfully:`, logEntry.id);
       } catch (logError) {
-        console.error('[AUDIO-PLAYBACK-LOG] Error creating log entry:', logError);
+        log.error('[AUDIO-PLAYBACK-LOG] Error creating log entry:', logError);
         // Don't fail the request if logging fails
       }
 
       return res.json({ audioUrl: cachedUrl });
     }
 
-    console.log(`[AUDIO-URL] Cache miss for ${interactionId}, fetching from database...`);
+    log.info(`[AUDIO-URL] Cache miss for ${interactionId}, fetching from database...`);
 
     const recording = await getCallRecordingById(interactionId);
 
@@ -262,6 +263,12 @@ router.get('/:interactionId/audio-url', authenticateToken, checkAudioRecordingsP
 
     // Generate pre-signed URL on-demand
     try {
+      if (!isS3Configured()) {
+        return res.status(503).json({
+          error: 'Audio service unavailable',
+          message: 'S3 storage is not configured. Audio playback requires AWS S3 credentials.'
+        });
+      }
       const audioUrl = await generateAudioDownloadUrl(recording.audiofilename);
 
       // Cache the URL for 50 minutes (slightly less than 1 hour expiration)
@@ -270,7 +277,7 @@ router.get('/:interactionId/audio-url', authenticateToken, checkAudioRecordingsP
       // Log audio playback access with IP address
       const ipAddress = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress;
 
-      console.log(`[AUDIO-PLAYBACK-LOG] Creating log entry for interactionId: ${interactionId}, userId: ${req.user.id}, IP: ${ipAddress}`);
+      log.info(`[AUDIO-PLAYBACK-LOG] Creating log entry for interactionId: ${interactionId}, userId: ${req.user.id}, IP: ${ipAddress}`);
 
       try {
         const logEntry = await prisma.log.create({
@@ -283,15 +290,15 @@ router.get('/:interactionId/audio-url', authenticateToken, checkAudioRecordingsP
             ipAddress: ipAddress
           }
         });
-        console.log(`[AUDIO-PLAYBACK-LOG] Log created successfully:`, logEntry.id);
+        log.info(`[AUDIO-PLAYBACK-LOG] Log created successfully:`, logEntry.id);
       } catch (logError) {
-        console.error('[AUDIO-PLAYBACK-LOG] Error creating log entry:', logError);
+        log.error('[AUDIO-PLAYBACK-LOG] Error creating log entry:', logError);
         // Don't fail the request if logging fails
       }
 
       res.json({ audioUrl });
     } catch (error) {
-      console.error(`Error generating URL for ${recording.audiofilename}:`, error);
+      log.error(`Error generating URL for ${recording.audiofilename}:`, error);
 
       // Log failed attempt with IP address
       const ipAddress = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress;
@@ -308,19 +315,19 @@ router.get('/:interactionId/audio-url', authenticateToken, checkAudioRecordingsP
           }
         });
       } catch (logError) {
-        console.error('Error creating log entry:', logError);
+        log.error('Error creating log entry:', logError);
       }
 
       res.status(500).json({
         error: 'Failed to generate audio URL',
-        message: error.message
+        message: 'An internal error occurred'
       });
     }
   } catch (error) {
-    console.error('Error generating audio URL:', error);
+    log.error('Error generating audio URL:', error);
     res.status(500).json({
       error: 'Failed to generate audio URL',
-      message: error.message
+      message: 'An internal error occurred'
     });
   }
 });
@@ -348,10 +355,10 @@ router.get('/:interactionId', authenticateToken, checkAudioRecordingsPermission,
 
     res.json({ data: recording });
   } catch (error) {
-    console.error('Error fetching audio recording:', error);
+    log.error('Error fetching audio recording:', error);
     res.status(500).json({
       error: 'Failed to fetch audio recording',
-      message: error.message
+      message: 'An internal error occurred'
     });
   }
 });
@@ -365,10 +372,10 @@ router.get('/filters/agents', authenticateToken, checkAudioRecordingsPermission,
     const agents = await getAgentNames();
     res.json({ agents: agents });
   } catch (error) {
-    console.error('Error fetching agent names:', error);
+    log.error('Error fetching agent names:', error);
     res.status(500).json({
       error: 'Failed to fetch agent names',
-      message: error.message
+      message: 'An internal error occurred'
     });
   }
 });
@@ -382,10 +389,10 @@ router.get('/filters/call-types', authenticateToken, checkAudioRecordingsPermiss
     const callTypes = await getCallTypes();
     res.json({ callTypes: callTypes });
   } catch (error) {
-    console.error('Error fetching call types:', error);
+    log.error('Error fetching call types:', error);
     res.status(500).json({
       error: 'Failed to fetch call types',
-      message: error.message
+      message: 'An internal error occurred'
     });
   }
 });
@@ -404,10 +411,10 @@ router.get('/filters/tags', authenticateToken, checkAudioRecordingsPermission, a
     }));
     res.json({ tags: tagsWithCompanies });
   } catch (error) {
-    console.error('Error fetching tags:', error);
+    log.error('Error fetching tags:', error);
     res.status(500).json({
       error: 'Failed to fetch tags',
-      message: error.message
+      message: 'An internal error occurred'
     });
   }
 });

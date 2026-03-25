@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import { prisma } from '../database/prisma.js';
 import { getCachedUser, cacheUser, invalidateUserSession } from './cache.js';
 import config from '../config/environment.js';
+import log from '../utils/console-logger.js';
 
 export const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -72,7 +73,7 @@ export const authenticateToken = async (req, res, next) => {
     
     next();
   } catch (error) {
-    console.error('Token verification error:', error);
+    log.error('Token verification error:', error);
     return res.status(403).json({ error: 'Invalid or expired token' });
   }
 };

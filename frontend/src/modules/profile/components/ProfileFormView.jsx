@@ -102,7 +102,7 @@ const buildSchema = (t) =>
 export const ProfileFormView = () => {
   const { t } = useTranslation();
   const dispatch = useDispatch();
-  const user = useSelector((state) => state.auth.user);
+  const { user, token, tokenExpiry } = useSelector((state) => state.auth);
 
   const [updateProfile, { isLoading: isUpdatingProfile }] =
     useUpdateProfileMutation();
@@ -141,13 +141,13 @@ export const ProfileFormView = () => {
       // Sync Redux state so AppBar name updates immediately
       dispatch(
         setCredentials({
-          token: localStorage.getItem("token"),
+          token,
           user: {
             ...user,
             firstName: result.user?.firstName ?? data.firstName,
             lastName: result.user?.lastName ?? data.lastName,
           },
-          tokenExpiry: localStorage.getItem("tokenExpiry"),
+          tokenExpiry,
         }),
       );
 

@@ -61,14 +61,22 @@ export const SwiperControl = () => {
   const [deleteCarouselImage] = useDeleteCarouselImageMutation();
   const { notificationRef, showSuccess, showError } = useNotification();
 
-  // Cleanup blob URLs on unmount to prevent memory leaks
+  // Track blob URLs for cleanup
+  const blobUrlsRef = useRef([]);
+  useEffect(() => {
+    newUploads.forEach((img) => {
+      if (img?.previewUrl && !blobUrlsRef.current.includes(img.previewUrl)) {
+        blobUrlsRef.current.push(img.previewUrl);
+      }
+    });
+  }, [newUploads]);
+
+  // Cleanup all blob URLs on unmount
   useEffect(() => {
     return () => {
-      newUploads.forEach((img) => {
-        if (img?.previewUrl) URL.revokeObjectURL(img.previewUrl);
-      });
+      blobUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   // Derive display images from RTK Query data + local state
   const displayImages = useMemo(() => {

@@ -1,6 +1,7 @@
 import express from 'express';
 import { prisma } from '../database/prisma.js';
 import { authenticateToken, requirePermission } from '../middleware/auth-prisma.js';
+import log from '../utils/console-logger.js';
 
 const router = express.Router();
 
@@ -12,7 +13,7 @@ router.get('/',
   authenticateToken,
   async (req, res) => {
     try {
-      console.log('[LOGS API] Request from user:', req.user.id);
+      log.debug('[LOGS API] Request from user:', req.user.id);
 
       // Check if user has permissions to view logs
       // Allow BPO Admin users (from BPO Administration client) or users with admin permissions
@@ -32,21 +33,21 @@ router.get('/',
         }
       });
 
-      console.log('[LOGS API] User client:', user?.client?.name);
+      log.debug('[LOGS API] User client:', user?.client?.name);
 
       // Check if user is BPO Admin (from BPO Administration client)
       const isBPOAdmin = user?.client?.name === 'BPO Administration';
 
-      console.log('[LOGS API] Is BPO Admin?', isBPOAdmin);
+      log.debug('[LOGS API] Is BPO Admin?', isBPOAdmin);
 
       if (!isBPOAdmin) {
-        console.log('[LOGS API] Access DENIED');
+        log.debug('[LOGS API] Access DENIED');
         return res.status(403).json({
           error: 'Access denied. Only BPO administrators can view logs.'
         });
       }
 
-      console.log('[LOGS API] Access GRANTED');
+      log.debug('[LOGS API] Access GRANTED');
 
       const {
         page = 1,
@@ -92,12 +93,12 @@ router.get('/',
         where.status = status;
       }
 
-      console.log('[LOGS API] Query params:', { page, limit, sortBy, sortOrder });
+      log.debug('[LOGS API] Query params:', { page, limit, sortBy, sortOrder });
 
       // Get total count
       const totalCount = await prisma.log.count({ where });
 
-      console.log('[LOGS API] Total count:', totalCount);
+      log.debug('[LOGS API] Total count:', totalCount);
 
       // Get logs with pagination
       const logs = await prisma.log.findMany({
@@ -109,7 +110,7 @@ router.get('/',
         }
       });
 
-      console.log('[LOGS API] Returning', logs.length, 'logs');
+      log.debug('[LOGS API] Returning', logs.length, 'logs');
 
       res.json({
         logs: logs,
@@ -122,7 +123,7 @@ router.get('/',
       });
 
     } catch (error) {
-      console.error('Error fetching logs:', error);
+      log.error('Error fetching logs:', error);
       res.status(500).json({ error: 'Failed to fetch logs' });
     }
   }
@@ -163,7 +164,7 @@ router.get('/:id',
       res.json({ data: log });
 
     } catch (error) {
-      console.error('Error fetching log:', error);
+      log.error('Error fetching log:', error);
       res.status(500).json({ error: 'Failed to fetch log' });
     }
   }
@@ -208,7 +209,7 @@ router.post('/',
       res.status(201).json({ data: log });
 
     } catch (error) {
-      console.error('Error creating log:', error);
+      log.error('Error creating log:', error);
       res.status(500).json({ error: 'Failed to create log' });
     }
   }
@@ -245,7 +246,7 @@ router.delete('/:id',
       res.json({ message: 'Log deleted successfully' });
 
     } catch (error) {
-      console.error('Error deleting log:', error);
+      log.error('Error deleting log:', error);
       res.status(500).json({ error: 'Failed to delete log' });
     }
   }

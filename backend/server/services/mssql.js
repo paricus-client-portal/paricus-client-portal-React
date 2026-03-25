@@ -1,6 +1,7 @@
 import sql from 'mssql';
 import NodeCache from 'node-cache';
 import envConfig from '../config/environment.js';
+import log from '../utils/console-logger.js';
 
 // Query result cache (5 minute TTL for count queries, 1 minute for data)
 const queryCache = new NodeCache({ stdTTL: 60, checkperiod: 120 });
@@ -49,20 +50,20 @@ export async function getPool() {
   if (!pool) {
     // Check if credentials are configured
     if (!isMSSQLConfigured()) {
-      console.log('[MSSQL] SQL Server credentials not configured - using mock data mode');
+      log.info('[MSSQL] SQL Server credentials not configured - using mock data mode');
       return null; // Return null to trigger mock data
     }
 
     try {
-      console.log('[MSSQL] Connecting to SQL Server...', {
+      log.info('[MSSQL] Connecting to SQL Server...', {
         server: config.server,
         database: config.database,
         poolSize: `${config.pool.min}-${config.pool.max}`
       });
       pool = await sql.connect(config);
-      console.log('[MSSQL] SQL Server connected successfully with optimized pool');
+      log.info('[MSSQL] SQL Server connected successfully with optimized pool');
     } catch (error) {
-      console.error('[MSSQL] Connection failed:', error.message);
+      log.error('[MSSQL] Connection failed:', error.message);
       pool = null;
       throw error;
     }
@@ -191,7 +192,7 @@ async function getTotalCount(pool, filters) {
   const cachedCount = countCache.get(countCacheKey);
 
   if (cachedCount !== undefined) {
-    console.log('[MSSQL] Count cache hit');
+    log.info('[MSSQL] Count cache hit');
     return cachedCount;
   }
 
@@ -277,7 +278,7 @@ export async function getCallRecordings(filters = {}, limit = 100, offset = 0) {
     const cached = queryCache.get(cacheKey);
 
     if (cached) {
-      console.log(`[MSSQL] Cache hit - returned in ${Date.now() - startTime}ms`);
+      log.info(`[MSSQL] Cache hit - returned in ${Date.now() - startTime}ms`);
       return cached;
     }
 
@@ -291,14 +292,14 @@ export async function getCallRecordings(filters = {}, limit = 100, offset = 0) {
 
     // If pool is null, MSSQL is not configured - return mock data
     if (!pool) {
-      console.log('[MSSQL] Using mock data with filters:', JSON.stringify(filters));
+      log.info('[MSSQL] Using mock data with filters:', JSON.stringify(filters));
       const mockResult = getMockAudioRecordings(limit, offset, filters);
       const resultData = {
         recordings: mockResult.data,
         totalCount: mockResult.total
       };
       queryCache.set(cacheKey, resultData);
-      console.log(`[MSSQL] Returning ${mockResult.data.length} mock recordings (total: ${mockResult.total})`);
+      log.info(`[MSSQL] Returning ${mockResult.data.length} mock recordings (total: ${mockResult.total})`);
       return resultData;
     }
 
@@ -391,7 +392,7 @@ export async function getCallRecordings(filters = {}, limit = 100, offset = 0) {
     request.input('limit', sql.Int, limit);
     request.input('offset', sql.Int, offset);
 
-    console.log('[MSSQL] Executing optimized query...');
+    log.info('[MSSQL] Executing optimized query...');
     const queryStartTime = Date.now();
 
     // Execute query and count in parallel
@@ -403,12 +404,12 @@ export async function getCallRecordings(filters = {}, limit = 100, offset = 0) {
     const queryDuration = Date.now() - queryStartTime;
     const totalDuration = Date.now() - startTime;
 
-    console.log(`[MSSQL] Performance metrics:`);
-    console.log(`  - Pool acquisition: ${poolTime}ms`);
-    console.log(`  - Query execution: ${queryDuration}ms`);
-    console.log(`  - Total time: ${totalDuration}ms`);
-    console.log(`  - Rows returned: ${result.recordset.length}`);
-    console.log(`  - Total count: ${totalCount}`);
+    log.info(`[MSSQL] Performance metrics:`);
+    log.info(`  - Pool acquisition: ${poolTime}ms`);
+    log.info(`  - Query execution: ${queryDuration}ms`);
+    log.info(`  - Total time: ${totalDuration}ms`);
+    log.info(`  - Rows returned: ${result.recordset.length}`);
+    log.info(`  - Total count: ${totalCount}`);
 
     const resultData = {
       recordings: result.recordset,
@@ -421,7 +422,7 @@ export async function getCallRecordings(filters = {}, limit = 100, offset = 0) {
     return resultData;
   } catch (error) {
     const totalDuration = Date.now() - startTime;
-    console.error(`[MSSQL] Error after ${totalDuration}ms:`, error);
+    log.error(`[MSSQL] Error after ${totalDuration}ms:`, error);
     throw error;
   }
 }
@@ -437,7 +438,7 @@ export async function getCallRecordingById(interactionId) {
     const cached = queryCache.get(cacheKey);
 
     if (cached) {
-      console.log('[MSSQL] Single record cache hit');
+      log.info('[MSSQL] Single record cache hit');
       return cached;
     }
 
@@ -475,7 +476,7 @@ export async function getCallRecordingById(interactionId) {
 
     return record;
   } catch (error) {
-    console.error('[MSSQL] Error fetching call recording by ID:', error);
+    log.error('[MSSQL] Error fetching call recording by ID:', error);
     throw error;
   }
 }
@@ -489,7 +490,7 @@ export async function getAgentNames() {
     const cached = queryCache.get(cacheKey);
 
     if (cached) {
-      console.log('[MSSQL] Agent names cache hit');
+      log.info('[MSSQL] Agent names cache hit');
       return cached;
     }
 
@@ -511,7 +512,7 @@ export async function getAgentNames() {
 
     return agentNames;
   } catch (error) {
-    console.error('[MSSQL] Error fetching agent names:', error);
+    log.error('[MSSQL] Error fetching agent names:', error);
     throw error;
   }
 }
@@ -525,7 +526,7 @@ export async function getCallTypes() {
     const cached = queryCache.get(cacheKey);
 
     if (cached) {
-      console.log('[MSSQL] Call types cache hit');
+      log.info('[MSSQL] Call types cache hit');
       return cached;
     }
 
@@ -538,7 +539,7 @@ export async function getCallTypes() {
 
     // If pool is null, MSSQL is not configured - return mock data
     if (!pool) {
-      console.log('[MSSQL] Using mock call types');
+      log.info('[MSSQL] Using mock call types');
       const mockCallTypes = ['inbound', 'outbound'];
       queryCache.set(cacheKey, mockCallTypes, 600);
       return mockCallTypes;
@@ -560,7 +561,7 @@ export async function getCallTypes() {
 
     return callTypes;
   } catch (error) {
-    console.error('[MSSQL] Error fetching call types:', error);
+    log.error('[MSSQL] Error fetching call types:', error);
     throw error;
   }
 }
@@ -574,7 +575,7 @@ export async function getTags() {
     const cached = queryCache.get(cacheKey);
 
     if (cached) {
-      console.log('[MSSQL] Tags cache hit');
+      log.info('[MSSQL] Tags cache hit');
       return cached;
     }
 
@@ -595,7 +596,7 @@ export async function getTags() {
 
     return tags;
   } catch (error) {
-    console.error('[MSSQL] Error fetching tags:', error);
+    log.error('[MSSQL] Error fetching tags:', error);
     throw error;
   }
 }
@@ -649,7 +650,7 @@ export async function testConnection() {
 export function clearCache() {
   queryCache.flushAll();
   countCache.flushAll();
-  console.log('[MSSQL] Query cache cleared');
+  log.info('[MSSQL] Query cache cleared');
 }
 
 /**
@@ -671,9 +672,9 @@ export async function closePool() {
       await pool.close();
       pool = null;
       clearCache();
-      console.log('[MSSQL] SQL Server connection closed and cache cleared');
+      log.info('[MSSQL] SQL Server connection closed and cache cleared');
     } catch (error) {
-      console.error('[MSSQL] Error closing SQL Server connection:', error);
+      log.error('[MSSQL] Error closing SQL Server connection:', error);
     }
   }
 }

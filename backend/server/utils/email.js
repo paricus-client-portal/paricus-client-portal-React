@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
+import log from './console-logger.js';
 
 dotenv.config();
 
@@ -47,9 +48,9 @@ export async function sendPasswordResetEmail(email, firstName, resetToken) {
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log('Password reset email sent to:', email);
+    log.info('Password reset email sent successfully');
   } catch (error) {
-    console.error('Error sending password reset email:', error);
+    log.error('Error sending password reset email:', error);
     throw error;
   }
 }

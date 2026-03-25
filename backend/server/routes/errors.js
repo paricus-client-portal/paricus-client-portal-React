@@ -1,6 +1,7 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
 import { authenticateToken } from '../middleware/auth-prisma.js';
+import log from '../utils/console-logger.js';
 
 const router = express.Router();
 
@@ -49,12 +50,12 @@ router.post('/', [
 
     // Log error to console for development
     if (process.env.NODE_ENV !== 'production') {
-      console.error('Client Error Report:', errorReport);
+      log.error('Client Error Report:', errorReport);
     }
 
     res.status(201).json({ message: 'Error logged successfully' });
   } catch (error) {
-    console.error('Error logging error:', error);
+    log.error('Error logging error:', error);
     res.status(500).json({ error: 'Failed to log error' });
   }
 });
@@ -74,7 +75,7 @@ router.get('/', authenticateToken, async (req, res) => {
 
     res.json({ errors });
   } catch (error) {
-    console.error('Get errors error:', error);
+    log.error('Get errors error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -90,7 +91,7 @@ router.delete('/', authenticateToken, async (req, res) => {
     errorStore.clear();
     res.json({ message: 'Error logs cleared' });
   } catch (error) {
-    console.error('Clear errors error:', error);
+    log.error('Clear errors error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

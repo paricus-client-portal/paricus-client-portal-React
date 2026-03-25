@@ -12,6 +12,7 @@ import { authenticateToken } from '../middleware/auth-prisma.js';
 import { authValidation, sanitizeInput } from '../middleware/validation.js';
 import { logLogin, logLogout, logProfileUpdate, logPasswordChange, logPasswordReset, logAvatarUpload, logAvatarDelete } from '../services/logger.js';
 import config from '../config/environment.js';
+import log from '../utils/console-logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -84,27 +85,23 @@ router.post('/login',
     });
 
     if (!user) {
-      console.log('❌ User not found for email:', email);
+      log.debug('Login failed: user not found');
       // Log failed login attempt
       await logLogin(null, email, false);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    console.log('✅ User found:', user.email);
-    console.log('🔑 Password hash from DB:', user.passwordHash.substring(0, 20) + '...');
-
     // Verify password
     const isValidPassword = await bcrypt.compare(password, user.passwordHash);
-    console.log('🔐 Password validation result:', isValidPassword);
 
     if (!isValidPassword) {
-      console.log('❌ Invalid password for user:', user.email);
+      log.debug('Login failed: invalid password');
       // Log failed login attempt
       await logLogin(user.id, email, false);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    console.log('✅ Login successful for:', user.email);
+    log.info('✅ Login successful for:', user.email);
 
     // Update last login (disabled temporarily due to SQLite timeout issues)
     // await prisma.user.update({
@@ -148,7 +145,7 @@ router.post('/login',
       }
     });
   } catch (error) {
-    console.error('Login error:', error);
+    log.error('Login error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -181,11 +178,11 @@ router.post('/forgot-password',
     }
 
     // Generate reset code (6 alphanumeric characters) — expires in 15 minutes
-    const resetCode = crypto.randomBytes(3).toString('hex').toUpperCase(); // e.g. "A3F1B2"
+    const resetCode = crypto.randomBytes(4).toString('hex').toUpperCase();
     const resetCodeExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
     // Log code to console (temporary — until email service is deployed)
-    console.log(`🔑 Password reset code for ${user.email}: ${resetCode} (expires in 15 min)`);
+    log.debug('Password reset code generated');
 
     // Save reset code to database
     await prisma.user.update({
@@ -198,7 +195,7 @@ router.post('/forgot-password',
 
     res.json({ message: 'If the email exists, a password reset code has been sent.' });
   } catch (error) {
-    console.error('Forgot password error:', error);
+    log.error('Forgot password error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -225,7 +222,7 @@ router.post('/verify-code',
 
     res.json({ valid: true });
   } catch (error) {
-    console.error('Verify code error:', error);
+    log.error('Verify code error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -269,7 +266,7 @@ router.post('/reset-password',
 
     res.json({ message: 'Password reset successfully' });
   } catch (error) {
-    console.error('Reset password error:', error);
+    log.error('Reset password error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -291,7 +288,7 @@ router.get('/profile', authenticateToken, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Profile error:', error);
+    log.error('Profile error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -382,7 +379,7 @@ router.put('/profile', authenticateToken, async (req, res) => {
 
     res.json({ message: 'Profile updated successfully', user });
   } catch (error) {
-    console.error('Profile update error:', error);
+    log.error('Profile update error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -422,7 +419,7 @@ router.put('/profile/password', authenticateToken, async (req, res) => {
 
     res.json({ message: 'Password changed successfully' });
   } catch (error) {
-    console.error('Password change error:', error);
+    log.error('Password change error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

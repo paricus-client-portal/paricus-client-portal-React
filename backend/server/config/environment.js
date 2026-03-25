@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import log from '../utils/console-logger.js';
 
 // Cargar variables de entorno
 dotenv.config();
@@ -81,17 +82,12 @@ function validateConfig() {
   }
 
   if (errors.length > 0) {
-    console.error('❌ ERRORES DE CONFIGURACIÓN:');
-    errors.forEach((error) => console.error(`   - ${error}`));
+    log.error('❌ ERRORES DE CONFIGURACIÓN:');
+    errors.forEach((error) => log.error(`   - ${error}`));
     throw new Error('Configuración inválida. Revisa el archivo .env');
   }
 
-  console.log('✅ Configuración validada correctamente');
-  console.log(`📦 Entorno: ${config.nodeEnv.toUpperCase()}`);
-  console.log(`🚀 Puerto: ${config.port}`);
-  console.log(`🌐 Cliente URL: ${config.clientUrl}`);
-  console.log(`💾 Storage Mode: ${config.storageMode.toUpperCase()}`);
-  console.log(`🗄️  Base de datos: ${config.databaseUrl}`);
+  log.info('✅ Configuración validada correctamente');
 }
 
 // Validar al cargar el módulo

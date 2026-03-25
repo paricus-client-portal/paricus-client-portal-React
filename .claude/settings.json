@@ -21,7 +21,8 @@
       "Bash(rm -f prisma/dev.db)",
       "Bash(PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=\"procede\" npx prisma migrate dev --name add_avatar_url_to_user)",
       "Bash(PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=\"procede\" npx prisma db push --force-reset)",
-      "Bash(npx prisma:*)"
+      "Bash(npx prisma:*)",
+      "Read(//c/desenvolup/FORJA/paricus-client-portal-React/frontend/src/modules/user-management/components/UsersTab/**)"
     ],
     "additionalDirectories": [
       "c:\\desarrollo\\FORJA\\paricus-client-portal-React\\frontend\\src\\modules\\user-management"

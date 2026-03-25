@@ -13,6 +13,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 import { prisma } from '../database/prisma.js';
+import log from '../utils/console-logger.js';
 
 const router = express.Router();
 
@@ -304,7 +305,7 @@ router.get('/', authenticateToken, async (req, res) => {
 
     res.json({ data: processedTickets });
   } catch (error) {
-    console.error('Error fetching tickets:', error);
+    log.error('Error fetching tickets:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -350,7 +351,7 @@ router.get('/departments', authenticateToken, async (req, res) => {
 
     res.json({ data: formattedDepartments });
   } catch (error) {
-    console.error('Error fetching departments:', error);
+    log.error('Error fetching departments:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -435,7 +436,7 @@ router.get('/assignable-users', authenticateToken, async (req, res) => {
 
     res.json({ data: formattedUsers });
   } catch (error) {
-    console.error('Error fetching assignable users:', error);
+    log.error('Error fetching assignable users:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -513,7 +514,7 @@ router.get('/change-requests', authenticateToken, async (req, res) => {
       data: changeRequests
     });
   } catch (error) {
-    console.error('Error fetching change requests:', error);
+    log.error('Error fetching change requests:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -620,7 +621,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 
     res.json({ data: processedTicket });
   } catch (error) {
-    console.error('Error fetching ticket:', error);
+    log.error('Error fetching ticket:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -755,7 +756,7 @@ router.post('/', authenticateToken, async (req, res) => {
 
     res.status(201).json({ data: ticketWithParsedDescription });
   } catch (error) {
-    console.error('Error creating ticket:', error);
+    log.error('Error creating ticket:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -911,7 +912,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
     res.json({ data: ticketWithParsedDescription });
   } catch (error) {
-    console.error('Error updating ticket:', error);
+    log.error('Error updating ticket:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -927,10 +928,10 @@ router.post('/:id/details', authenticateToken, async (req, res) => {
     const { clientId, id: userId, permissions } = req.user;
     const { detail } = req.body;
 
-    console.log('📝 Adding ticket detail:', { ticketId: id, clientId, userId, hasDetail: !!detail });
+    log.debug('Adding ticket detail:', { ticketId: id });
 
     if (!detail) {
-      console.error('❌ Detail validation failed: Detail is required');
+      log.error('❌ Detail validation failed: Detail is required');
       return res.status(400).json({ error: 'Detail is required' });
     }
 
@@ -968,11 +969,11 @@ router.post('/:id/details', authenticateToken, async (req, res) => {
     });
 
     if (!existingTicket) {
-      console.error('❌ Ticket not found or access denied:', { ticketId: id, clientId, userId });
+      log.error('Ticket not found or access denied:', { ticketId: id });
       return res.status(404).json({ error: 'Ticket not found' });
     }
 
-    console.log('✅ Ticket found, creating detail...');
+    log.debug('Ticket found, creating detail...');
 
     // Add new detail
     const ticketDetail = await prisma.ticketDetail.create({
@@ -983,7 +984,7 @@ router.post('/:id/details', authenticateToken, async (req, res) => {
       },
     });
 
-    console.log('✅ Detail created:', ticketDetail.id);
+    log.debug('Detail created:', ticketDetail.id);
 
     // Get updated ticket with all details
     const ticket = await prisma.ticket.findUnique({
@@ -1022,11 +1023,11 @@ router.post('/:id/details', authenticateToken, async (req, res) => {
     // Process ticket: parse description and add URLs to attachments
     const processedTicket = processTicketWithUrls(ticket);
 
-    console.log('✅ Ticket detail added successfully');
+    log.debug('Ticket detail added successfully');
     res.status(201).json({ data: processedTicket });
   } catch (error) {
-    console.error('❌ Error adding detail:', error);
-    console.error('Error stack:', error.stack);
+    log.error('❌ Error adding detail:', error);
+    log.debug('Error stack:', error.stack);
     res.status(500).json({ error: error.message || 'Failed to add ticket detail' });
   }
 });
@@ -1095,7 +1096,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
               await fs.unlink(filePath);
             }
           } catch (error) {
-            console.error('Error deleting attachment file:', error);
+            log.error('Error deleting attachment file:', error);
           }
         })
       );
@@ -1108,7 +1109,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 
     res.json({ message: 'Ticket deleted successfully' });
   } catch (error) {
-    console.error('Error deleting ticket:', error);
+    log.error('Error deleting ticket:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -1119,10 +1120,10 @@ router.delete('/:id', authenticateToken, async (req, res) => {
  * @access  Private
  */
 router.post('/:id/attachments', authenticateToken, (req, res, next) => {
-  console.log('🚀 Starting file upload...');
+  log.debug('Starting file upload...');
   upload.single('image')(req, res, (err) => {
     if (err) {
-      console.error('❌ Multer error:', err);
+      log.error('❌ Multer error:', err);
       if (err instanceof multer.MulterError) {
         if (err.code === 'LIMIT_FILE_SIZE') {
           return res.status(400).json({ error: 'File size too large. Maximum 10MB allowed.' });
@@ -1140,19 +1141,18 @@ router.post('/:id/attachments', authenticateToken, (req, res, next) => {
     const { id: ticketId } = req.params;
     const { clientId, id: userId, permissions } = req.user;
 
-    console.log('📎 Upload attachment request:', { ticketId, clientId, userId, hasFile: !!req.file });
+    log.debug('Upload attachment request:', { ticketId, hasFile: !!req.file });
 
     // Validate file first
     if (!req.file) {
-      console.error('❌ No file in request');
+      log.error('❌ No file in request');
       return res.status(400).json({ error: 'No image file provided' });
     }
 
-    console.log('📁 File details:', {
+    log.debug('File details:', {
       originalname: req.file.originalname,
       mimetype: req.file.mimetype,
       size: req.file.size,
-      path: req.file.path,
     });
 
     // Store local file path for cleanup if needed
@@ -1189,25 +1189,25 @@ router.post('/:id/attachments', authenticateToken, (req, res, next) => {
     }
 
     // Check if ticket exists and user has access to it
-    console.log('🔍 Looking for ticket:', { ticketId, clientId, userId });
+    log.debug('Looking for ticket:', { ticketId });
     const ticket = await prisma.ticket.findFirst({
       where: whereClause,
     });
 
     if (!ticket) {
-      console.error('❌ Ticket not found or access denied:', { ticketId, clientId, userId });
+      log.error('Ticket not found or access denied:', { ticketId });
       // Clean up uploaded file if ticket doesn't exist
       if (localFilePath) {
         try {
           await fs.unlink(localFilePath);
         } catch (cleanupError) {
-          console.error('Error cleaning up file:', cleanupError);
+          log.error('Error cleaning up file:', cleanupError);
         }
       }
       return res.status(404).json({ error: 'Ticket not found' });
     }
 
-    console.log('✅ Ticket found, proceeding with attachment save');
+    log.debug('Ticket found, proceeding with attachment save');
 
     let s3Key, s3Bucket;
 
@@ -1241,7 +1241,7 @@ router.post('/:id/attachments', authenticateToken, (req, res, next) => {
 
     while (retries > 0) {
       try {
-        console.log(`💾 Saving attachment to database (attempt ${4 - retries}/3)...`);
+        log.debug(`Saving attachment to database (attempt ${4 - retries}/3)...`);
         attachment = await prisma.ticketAttachment.create({
           data: {
             ticketId,
@@ -1252,10 +1252,10 @@ router.post('/:id/attachments', authenticateToken, (req, res, next) => {
             mimeType: req.file.mimetype,
           },
         });
-        console.log('✅ Attachment saved to database:', attachment.id);
+        log.debug('Attachment saved to database:', attachment.id);
         break; // Success, exit retry loop
       } catch (dbError) {
-        console.error(`❌ Database error (attempt ${4 - retries}/3):`, dbError.message);
+        log.error(`❌ Database error (attempt ${4 - retries}/3):`, dbError.message);
         lastError = dbError;
         retries--;
 
@@ -1268,32 +1268,32 @@ router.post('/:id/attachments', authenticateToken, (req, res, next) => {
 
     if (!attachment) {
       // Database save failed after retries
-      console.error('❌ Failed to save attachment to database after retries:', lastError);
+      log.error('❌ Failed to save attachment to database after retries:', lastError);
 
       // Clean up uploaded file
       if (localFilePath) {
         try {
           await fs.unlink(localFilePath);
         } catch (cleanupError) {
-          console.error('Error cleaning up file:', cleanupError);
+          log.error('Error cleaning up file:', cleanupError);
         }
       }
 
       throw new Error('Failed to save attachment to database. Please try again.');
     }
 
-    console.log('✅ Attachment upload complete');
+    log.debug('Attachment upload complete');
     res.status(201).json({ data: attachment });
   } catch (error) {
-    console.error('❌ Error uploading attachment:', error);
-    console.error('Error stack:', error.stack);
+    log.error('❌ Error uploading attachment:', error);
+    log.debug('Error stack:', error.stack);
 
     // Clean up file on error if in local mode
     if (localFilePath) {
       try {
         await fs.unlink(localFilePath);
       } catch (cleanupError) {
-        console.error('Error cleaning up file on error:', cleanupError);
+        log.error('Error cleaning up file on error:', cleanupError);
       }
     }
 
@@ -1351,7 +1351,7 @@ router.get('/:ticketId/attachments/:attachmentId/url', authenticateToken, async 
 
     res.json({ url });
   } catch (error) {
-    console.error('Error generating attachment URL:', error);
+    log.error('Error generating attachment URL:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -1440,7 +1440,7 @@ router.get('/:ticketId/attachments/:attachmentId/file', authenticateTokenFlexibl
     // Stream the file
     res.sendFile(filePath);
   } catch (error) {
-    console.error('Error serving attachment file:', error);
+    log.error('Error serving attachment file:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -1514,7 +1514,7 @@ router.delete('/:ticketId/attachments/:attachmentId', authenticateToken, async (
         });
         await s3Client.send(deleteCommand);
       } catch (error) {
-        console.error('Error deleting from S3:', error);
+        log.error('Error deleting from S3:', error);
       }
     } else {
       // Delete from local storage
@@ -1522,7 +1522,7 @@ router.delete('/:ticketId/attachments/:attachmentId', authenticateToken, async (
         const filePath = path.join(UPLOADS_DIR, attachment.s3Key);
         await fs.unlink(filePath);
       } catch (error) {
-        console.error('Error deleting local file:', error);
+        log.error('Error deleting local file:', error);
       }
     }
 
@@ -1533,7 +1533,7 @@ router.delete('/:ticketId/attachments/:attachmentId', authenticateToken, async (
 
     res.json({ message: 'Attachment deleted successfully' });
   } catch (error) {
-    console.error('Error deleting attachment:', error);
+    log.error('Error deleting attachment:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -1654,7 +1654,7 @@ router.post('/:ticketId/details/:detailId/attachments', authenticateToken, uploa
 
     res.status(201).json({ data: attachment });
   } catch (error) {
-    console.error('Error uploading detail attachment:', error);
+    log.error('Error uploading detail attachment:', error);
 
     // SECURITY: Don't expose internal error details in production
     const errorMessage = process.env.NODE_ENV === 'production'
@@ -1713,7 +1713,7 @@ router.get('/:ticketId/details/:detailId/attachments/:attachmentId/url', authent
 
     res.json({ url });
   } catch (error) {
-    console.error('Error generating detail attachment URL:', error);
+    log.error('Error generating detail attachment URL:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -1772,7 +1772,7 @@ router.get('/:ticketId/details/:detailId/attachments/:attachmentId/file', authen
     const resolvedPath = path.resolve(filePath);
     const resolvedUploadsDir = path.resolve(UPLOADS_DIR);
     if (!resolvedPath.startsWith(resolvedUploadsDir)) {
-      console.error('Path traversal attempt detected:', { filePath, resolvedPath, resolvedUploadsDir });
+      log.error('Path traversal attempt detected:', { filePath, resolvedPath, resolvedUploadsDir });
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -1795,7 +1795,7 @@ router.get('/:ticketId/details/:detailId/attachments/:attachmentId/file', authen
     // Stream the file
     res.sendFile(resolvedPath);
   } catch (error) {
-    console.error('Error serving detail attachment file:', error);
+    log.error('Error serving detail attachment file:', error);
 
     // SECURITY: Don't expose internal error details in production
     const errorMessage = process.env.NODE_ENV === 'production'
@@ -1875,7 +1875,7 @@ router.delete('/:ticketId/details/:detailId/attachments/:attachmentId', authenti
         });
         await s3Client.send(deleteCommand);
       } catch (error) {
-        console.error('Error deleting from S3:', error);
+        log.error('Error deleting from S3:', error);
       }
     } else {
       // Delete from local storage
@@ -1883,7 +1883,7 @@ router.delete('/:ticketId/details/:detailId/attachments/:attachmentId', authenti
         const filePath = path.join(UPLOADS_DIR, attachment.s3Key);
         await fs.unlink(filePath);
       } catch (error) {
-        console.error('Error deleting local file:', error);
+        log.error('Error deleting local file:', error);
       }
     }
 
@@ -1894,7 +1894,7 @@ router.delete('/:ticketId/details/:detailId/attachments/:attachmentId', authenti
 
     res.json({ message: 'Detail attachment deleted successfully' });
   } catch (error) {
-    console.error('Error deleting detail attachment:', error);
+    log.error('Error deleting detail attachment:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -2026,7 +2026,7 @@ router.post('/:id/change-request', authenticateToken, async (req, res) => {
       data: changeRequest
     });
   } catch (error) {
-    console.error('Error creating change request:', error);
+    log.error('Error creating change request:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -2138,7 +2138,7 @@ router.put('/change-requests/:id/approve', authenticateToken, async (req, res) =
       }
     });
   } catch (error) {
-    console.error('Error approving change request:', error);
+    log.error('Error approving change request:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -2209,7 +2209,7 @@ router.put('/change-requests/:id/reject', authenticateToken, async (req, res) =>
       data: updatedRequest
     });
   } catch (error) {
-    console.error('Error rejecting change request:', error);
+    log.error('Error rejecting change request:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -2275,7 +2275,7 @@ router.get('/:id/change-requests', authenticateToken, async (req, res) => {
       data: changeRequests
     });
   } catch (error) {
-    console.error('Error fetching ticket change requests:', error);
+    log.error('Error fetching ticket change requests:', error);
     res.status(500).json({ error: error.message });
   }
 });

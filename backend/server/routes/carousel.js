@@ -7,6 +7,7 @@ import jwt from 'jsonwebtoken';
 import { authenticateToken, requirePermission } from '../middleware/auth-prisma.js';
 import { prisma } from '../database/prisma.js';
 import { logCarouselSave, logCarouselDelete } from '../services/logger.js';
+import log from '../utils/console-logger.js';
 
 const router = express.Router();
 
@@ -131,7 +132,7 @@ router.get(
 
       res.json({ success: true, data: imagesWithUrls });
     } catch (error) {
-      console.error('❌ Error fetching carousel images:', error);
+      log.error('❌ Error fetching carousel images:', error);
       res.status(500).json({ success: false, error: 'Error fetching carousel images' });
     }
   }
@@ -167,7 +168,7 @@ router.post(
 
       if (files.length !== slots.length) {
         // Clean up uploaded files
-        files.forEach(f => fs.unlinkSync(f.path));
+        files.forEach(f => { try { fs.unlinkSync(f.path); } catch {} });
         return res.status(400).json({ success: false, error: 'Mismatch between files and slot indices' });
       }
 
@@ -195,7 +196,7 @@ router.post(
         if (existing) {
           const oldPath = path.join(UPLOAD_DIR, existing.filePath);
           if (fs.existsSync(oldPath)) {
-            fs.unlinkSync(oldPath);
+            try { fs.unlinkSync(oldPath); } catch {}
           }
           await prisma.carouselImage.delete({ where: { id: existing.id } });
         }
@@ -223,14 +224,14 @@ router.post(
         data: results
       });
     } catch (error) {
-      console.error('❌ Error saving carousel images:', error);
+      log.error('❌ Error saving carousel images:', error);
       // Clean up uploaded files on error
       if (req.files) {
         req.files.forEach(f => {
-          if (fs.existsSync(f.path)) fs.unlinkSync(f.path);
+          if (fs.existsSync(f.path)) { try { fs.unlinkSync(f.path); } catch {} }
         });
       }
-      res.status(500).json({ success: false, error: 'Error saving carousel images', details: error.message });
+      res.status(500).json({ success: false, error: 'Error saving carousel images' });
     }
   }
 );
@@ -263,7 +264,7 @@ router.get(
       res.setHeader('Content-Disposition', `inline; filename="${image.fileName}"`);
       res.sendFile(filePath);
     } catch (error) {
-      console.error('❌ Error serving carousel image:', error);
+      log.error('❌ Error serving carousel image:', error);
       res.status(500).json({ success: false, error: 'Error serving image' });
     }
   }
@@ -291,7 +292,7 @@ router.delete(
       // Delete file from disk
       const filePath = path.join(UPLOAD_DIR, image.filePath);
       if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
+        try { fs.unlinkSync(filePath); } catch {}
       }
 
       await prisma.carouselImage.delete({ where: { id: parseInt(id) } });
@@ -300,7 +301,7 @@ router.delete(
 
       res.json({ success: true, message: 'Carousel image deleted' });
     } catch (error) {
-      console.error('❌ Error deleting carousel image:', error);
+      log.error('❌ Error deleting carousel image:', error);
       res.status(500).json({ success: false, error: 'Error deleting image' });
     }
   }

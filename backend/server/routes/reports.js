@@ -12,6 +12,7 @@ import {
   getBucketName,
   deleteS3Object
 } from '../services/s3.js';
+import log from '../utils/console-logger.js';
 
 const router = express.Router();
 
@@ -52,7 +53,7 @@ router.get('/client-folders', async (req, res) => {
       bucket: getBucketName()
     });
   } catch (error) {
-    console.error('Error listing client folders:', error);
+    log.error('Error listing client folders:', error);
     res.status(500).json({
       error: 'Failed to list client folders',
       message: error.message
@@ -103,7 +104,7 @@ router.get('/client/:clientFolder', [
           const downloadUrl = await generateDownloadUrl(report.key);
           return { ...report, downloadUrl };
         } catch (error) {
-          console.error(`Error generating URL for ${report.key}:`, error);
+          log.error(`Error generating URL for ${report.key}:`, error);
           return { ...report, downloadUrl: null };
         }
       })
@@ -115,7 +116,7 @@ router.get('/client/:clientFolder', [
       reports: reportsWithUrls
     });
   } catch (error) {
-    console.error('Error listing client reports:', error);
+    log.error('Error listing client reports:', error);
     res.status(500).json({
       error: 'Failed to list client reports',
       message: error.message
@@ -217,7 +218,7 @@ router.post('/upload/:clientFolder', [
     });
 
   } catch (error) {
-    console.error('Error uploading report:', error);
+    log.error('Error uploading report:', error);
     res.status(500).json({
       error: 'Failed to upload report',
       message: error.message
@@ -276,7 +277,7 @@ router.get('/download/:clientFolder/:fileName', [
     });
 
   } catch (error) {
-    console.error('Error generating download URL:', error);
+    log.error('Error generating download URL:', error);
     res.status(500).json({
       error: 'Failed to generate download URL',
       message: error.message
@@ -329,7 +330,7 @@ router.delete('/:clientFolder/:fileName', [
     });
 
   } catch (error) {
-    console.error('Error deleting report:', error);
+    log.error('Error deleting report:', error);
     res.status(500).json({
       error: 'Failed to delete report',
       message: error.message
@@ -361,7 +362,7 @@ router.get('/client-folder-access', async (req, res) => {
       data: clientFolderAccess
     });
   } catch (error) {
-    console.error('Error fetching client folder access:', error);
+    log.error('Error fetching client folder access:', error);
     res.status(500).json({
       error: 'Failed to fetch client folder access',
       message: error.message
@@ -421,7 +422,7 @@ router.post('/client-folder-access', [
     });
 
   } catch (error) {
-    console.error('Error granting folder access:', error);
+    log.error('Error granting folder access:', error);
     res.status(500).json({
       error: 'Failed to grant folder access',
       message: error.message
@@ -465,7 +466,7 @@ router.delete('/client-folder-access/:clientId/:folderName', [
     });
 
   } catch (error) {
-    console.error('Error removing folder access:', error);
+    log.error('Error removing folder access:', error);
     res.status(500).json({
       error: 'Failed to remove folder access',
       message: error.message
@@ -501,7 +502,7 @@ router.get('/client-folders-accessible', async (req, res) => {
       folders: accessibleFolders
     });
   } catch (error) {
-    console.error('Error fetching accessible folders:', error);
+    log.error('Error fetching accessible folders:', error);
     res.status(500).json({
       error: 'Failed to fetch accessible folders',
       message: error.message

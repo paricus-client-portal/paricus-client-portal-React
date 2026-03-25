@@ -1,4 +1,5 @@
 import NodeCache from 'node-cache';
+import log from '../utils/console-logger.js';
 
 // Create cache instances with different TTL settings
 const shortCache = new NodeCache({ stdTTL: 300 }); // 5 minutes
@@ -63,7 +64,7 @@ export const cache = (options = {}) => {
     // Try to get from cache
     const cachedData = cacheInstance.get(cacheKey);
     if (cachedData) {
-      console.log(`Cache hit: ${cacheKey}`);
+      log.debug(`Cache hit: ${cacheKey}`);
       return res.json(cachedData);
     }
 
@@ -72,7 +73,7 @@ export const cache = (options = {}) => {
     res.json = function(data) {
       // Only cache successful responses
       if (res.statusCode === 200) {
-        console.log(`Cache set: ${cacheKey}`);
+        log.debug(`Cache set: ${cacheKey}`);
         cacheInstance.set(cacheKey, data);
       }
       return originalJson.call(this, data);

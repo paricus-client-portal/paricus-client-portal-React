@@ -19,6 +19,7 @@ import {
   logInvoiceUpdate,
   logInvoiceDelete
 } from '../services/logger.js';
+import log from '../utils/console-logger.js';
 
 const router = express.Router();
 
@@ -77,10 +78,10 @@ router.get('/client-folders', async (req, res) => {
       bucket: getBucketName()
     });
   } catch (error) {
-    console.error('Error listing client folders:', error);
+    log.error('Error listing client folders:', error);
     res.status(500).json({
       error: 'Failed to list client folders',
-      message: error.message
+      message: 'An internal error occurred'
     });
   }
 });
@@ -117,7 +118,7 @@ router.get('/client/:clientFolder', [
       }
       // CRITICAL: Clients can ONLY access their own client's folder
       if (folderAccess.clientId !== req.user.clientId) {
-        console.warn(`SECURITY: User ${req.user.id} (clientId: ${req.user.clientId}) attempted to access folder for clientId: ${folderAccess.clientId}`);
+        log.warn(`SECURITY: User ${req.user.id} (clientId: ${req.user.clientId}) attempted to access folder for clientId: ${folderAccess.clientId}`);
         return res.status(403).json({ error: 'Access denied to this client folder' });
       }
     }
@@ -153,7 +154,7 @@ router.get('/client/:clientFolder', [
             downloadUrl
           };
         } catch (error) {
-          console.error(`Error generating URL for ${invoice.s3Key}:`, error);
+          log.error(`Error generating URL for ${invoice.s3Key}:`, error);
           return {
             id: invoice.id,
             invoiceNumber: invoice.invoiceNumber,
@@ -183,10 +184,10 @@ router.get('/client/:clientFolder', [
       invoices: invoicesWithUrls
     });
   } catch (error) {
-    console.error('Error listing client invoices:', error);
+    log.error('Error listing client invoices:', error);
     res.status(500).json({
       error: 'Failed to list client invoices',
-      message: error.message
+      message: 'An internal error occurred'
     });
   }
 });
@@ -333,10 +334,10 @@ router.post('/upload/:clientFolder',
       }
     });
   } catch (error) {
-    console.error('Error uploading invoice:', error);
+    log.error('Error uploading invoice:', error);
     res.status(500).json({
       error: 'Failed to upload invoice',
-      message: error.message
+      message: 'An internal error occurred'
     });
   }
 });
@@ -388,10 +389,10 @@ router.get('/download/:clientFolder/:fileName', [
       expiresIn: 3600 // 1 hour
     });
   } catch (error) {
-    console.error('Error generating download URL:', error);
+    log.error('Error generating download URL:', error);
     res.status(500).json({
       error: 'Failed to generate download URL',
-      message: error.message
+      message: 'An internal error occurred'
     });
   }
 });
@@ -441,10 +442,10 @@ router.delete('/delete/:invoiceId', [
       message: 'Invoice deleted successfully'
     });
   } catch (error) {
-    console.error('Error deleting invoice:', error);
+    log.error('Error deleting invoice:', error);
     res.status(500).json({
       error: 'Failed to delete invoice',
-      message: error.message
+      message: 'An internal error occurred'
     });
   }
 });
@@ -531,7 +532,7 @@ router.put('/:invoiceId', [
       }
     });
   } catch (error) {
-    console.error('Error updating invoice:', error);
+    log.error('Error updating invoice:', error);
 
     if (error.code === 'P2025') {
       return res.status(404).json({ error: 'Invoice not found' });
@@ -539,7 +540,7 @@ router.put('/:invoiceId', [
 
     res.status(500).json({
       error: 'Failed to update invoice',
-      message: error.message
+      message: 'An internal error occurred'
     });
   }
 });
@@ -582,7 +583,7 @@ router.put('/payment-link/:invoiceId', [
       }
     });
   } catch (error) {
-    console.error('Error updating payment link:', error);
+    log.error('Error updating payment link:', error);
 
     if (error.code === 'P2025') {
       return res.status(404).json({
@@ -593,7 +594,7 @@ router.put('/payment-link/:invoiceId', [
 
     res.status(500).json({
       error: 'Failed to update payment link',
-      message: error.message
+      message: 'An internal error occurred'
     });
   }
 });
@@ -671,10 +672,10 @@ router.get('/stats/:clientFolder', [
       }
     });
   } catch (error) {
-    console.error('Error fetching AR stats:', error);
+    log.error('Error fetching AR stats:', error);
     res.status(500).json({
       error: 'Failed to fetch AR statistics',
-      message: error.message
+      message: 'An internal error occurred'
     });
   }
 });
@@ -732,10 +733,10 @@ router.get('/stats', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching client AR stats:', error);
+    log.error('Error fetching client AR stats:', error);
     res.status(500).json({
       error: 'Failed to fetch AR statistics',
-      message: error.message
+      message: 'An internal error occurred'
     });
   }
 });
@@ -841,7 +842,7 @@ router.get('/', async (req, res) => {
               downloadUrl
             };
           } catch (error) {
-            console.error(`Error generating URL for ${invoice.s3Key}:`, error);
+            log.error(`Error generating URL for ${invoice.s3Key}:`, error);
             return {
               id: invoice.id,
               invoiceNumber: invoice.invoiceNumber,
@@ -866,10 +867,10 @@ router.get('/', async (req, res) => {
       });
     }
   } catch (error) {
-    console.error('Error fetching invoices:', error);
+    log.error('Error fetching invoices:', error);
     res.status(500).json({
       error: 'Failed to fetch invoices',
-      message: error.message
+      message: 'An internal error occurred'
     });
   }
 });

@@ -23,6 +23,9 @@ import carouselRoutes from './routes/carousel.js';
 // Import security middleware
 import { validateCSRFToken, getCSRFToken } from './middleware/csrf.js';
 
+// Import centralized logger
+import log from './utils/console-logger.js';
+
 // Import database
 import { initializePrisma, disconnectPrisma } from './database/prisma.js';
 
@@ -44,8 +47,8 @@ const corsOptions = {
     if (allowedOrigins.indexOf(origin) !== -1 || config.isDevelopment) {
       callback(null, true);
     } else {
-      console.log('❌ CORS blocked origin:', origin);
-      console.log('   Allowed origins:', allowedOrigins);
+      log.info('❌ CORS blocked origin:', origin);
+      log.info('   Allowed origins:', allowedOrigins);
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -59,9 +62,9 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// Log all requests for debugging
+// Log all requests for debugging (only in development)
 app.use((req, res, next) => {
-  console.log(`📥 ${req.method} ${req.path} from ${req.get('origin') || 'no-origin'}`);
+  log.debug(`📥 ${req.method} ${req.path}`);
   next();
 });
 
@@ -164,6 +167,7 @@ const authLimiter = rateLimit({
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/forgot-password', authLimiter);
 app.use('/api/auth/reset-password', authLimiter);
+app.use('/api/auth/profile/password', authLimiter);
 
 // Admin endpoints rate limiting (moderate)
 const adminLimiter = createRateLimiter(
@@ -217,7 +221,7 @@ app.get('/api/s3-test', async (req, res) => {
       region: process.env.AWS_REGION
     });
   } catch (error) {
-    console.error('S3 test failed:', error);
+    log.error('S3 test failed:', error);
     res.status(500).json({
       success: false,
       message: 'S3 connection failed',
@@ -243,14 +247,10 @@ if (config.isProduction) {
 // Error handling middleware
 app.use((err, req, res, next) => {
   // Log error details
-  console.error('Server Error:', {
+  log.error('Server Error:', {
     message: err.message,
-    stack: err.stack,
     url: req.url,
     method: req.method,
-    ip: req.ip,
-    userAgent: req.get('User-Agent'),
-    timestamp: new Date().toISOString()
   });
 
   // Don't leak error details in production
@@ -295,50 +295,33 @@ app.use((req, res) => {
 async function startServer() {
   try {
     await initializePrisma();
-    console.log('Database initialized successfully');
+    log.info('Database initialized successfully');
 
     app.listen(PORT, () => {
-      console.log('\n' + '='.repeat(60));
-      console.log('🚀 SERVER STARTED SUCCESSFULLY');
-      console.log('='.repeat(60));
-      console.log(`📦 Environment: ${config.nodeEnv.toUpperCase()}`);
-      console.log(`🌐 Port: ${PORT}`);
-      console.log(`🔗 Client URL: ${config.clientUrl}`);
-      console.log(`💾 Storage Mode: ${config.storageMode.toUpperCase()}`);
-      console.log(`🗄️  Database: ${config.databaseUrl}`);
-      console.log('='.repeat(60));
-
-      if (config.isDevelopment) {
-        console.log(`\n🔑 MOCKUP CREDENTIALS:`);
-        console.log(`\n   BPO Administration:`);
-        console.log(`   └─ Admin: admin@paricus.com / admin123!`);
-        console.log(`\n   Flex Mobile:`);
-        console.log(`   ├─ Admin: admin@flexmobile.com / flex123!`);
-        console.log(`   └─ User:  user@flexmobile.com / flexuser123!`);
-        console.log(`\n   IM Telecom:`);
-        console.log(`   ├─ Admin: admin@imtelecom.com / imtelecom123!`);
-        console.log(`   └─ User:  user@imtelecom.com / imuser123!`);
-        console.log(`\n   North American Local:`);
-        console.log(`   ├─ Admin: admin@northamericanlocal.com / northam123!`);
-        console.log(`   └─ User:  user@northamericanlocal.com / naluser123!`);
-        console.log('\n' + '='.repeat(60) + '\n');
-      }
+      log.info('\n' + '='.repeat(60));
+      log.info('🚀 SERVER STARTED SUCCESSFULLY');
+      log.info('='.repeat(60));
+      log.info(`📦 Environment: ${config.nodeEnv.toUpperCase()}`);
+      log.info(`🌐 Port: ${PORT}`);
+      log.info(`🔗 Client URL: ${config.clientUrl}`);
+      log.info(`💾 Storage Mode: ${config.storageMode.toUpperCase()}`);
+      log.info('='.repeat(60));
     });
   } catch (error) {
-    console.error('Failed to start server:', error);
+    log.error('Failed to start server:', error);
     process.exit(1);
   }
 }
 
 // Handle graceful shutdown
 process.on('SIGINT', async () => {
-  console.log('Shutting down gracefully...');
+  log.info('Shutting down gracefully...');
   await disconnectPrisma();
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
-  console.log('Shutting down gracefully...');
+  log.info('Shutting down gracefully...');
   await disconnectPrisma();
   process.exit(0);
 });

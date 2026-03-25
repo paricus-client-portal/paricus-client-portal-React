@@ -1,4 +1,5 @@
 import { prisma } from '../database/prisma.js';
+import log from '../utils/console-logger.js';
 
 /**
  * Create a log entry in the database
@@ -24,7 +25,7 @@ export async function createLog({ userId, eventType, entity, description, status
     });
   } catch (error) {
     // Don't throw error to avoid breaking the main operation
-    console.error('Error creating log:', error);
+    log.error('Error creating log:', error);
   }
 }
 

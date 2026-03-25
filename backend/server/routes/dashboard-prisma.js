@@ -7,6 +7,7 @@ import jwt from 'jsonwebtoken';
 import { authenticateToken, requirePermission } from '../middleware/auth-prisma.js';
 import { prisma } from '../database/prisma.js';
 import { logAnnouncementCreate, logAnnouncementDelete } from '../services/logger.js';
+import log from '../utils/console-logger.js';
 
 const router = express.Router();
 
@@ -67,20 +68,20 @@ function authenticateTokenFlexible(req, res, next) {
     }
 
     if (!token) {
-      console.log('❌ No token provided in request');
+      log.info('❌ No token provided in request');
       return res.status(401).json({ error: 'No token provided' });
     }
 
-    console.log('🔑 Token received, verifying...');
+    log.info('🔑 Token received, verifying...');
 
     // Verify token
     jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
       if (err) {
-        console.error('❌ Token verification error:', err.message);
+        log.error('❌ Token verification error:', err.message);
         return res.status(403).json({ error: 'Invalid or expired token' });
       }
 
-      console.log('✅ Token verified successfully');
+      log.info('✅ Token verified successfully');
       req.user = {
         userId: decoded.userId,
         clientId: decoded.clientId,
@@ -91,7 +92,7 @@ function authenticateTokenFlexible(req, res, next) {
       next();
     });
   } catch (error) {
-    console.error('❌ Authentication error:', error);
+    log.error('❌ Authentication error:', error);
     return res.status(500).json({ error: 'Authentication failed' });
   }
 }
@@ -317,11 +318,11 @@ router.get('/stats', authenticateToken, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('❌ Dashboard stats error:', error);
+    log.error('❌ Dashboard stats error:', error);
     res.status(500).json({
       success: false,
       error: 'Error fetching dashboard statistics',
-      message: error.message,
+      message: 'An internal error occurred',
     });
   }
 });
@@ -369,11 +370,11 @@ router.get('/recent-articles', authenticateToken, async (req, res) => {
       data: articles,
     });
   } catch (error) {
-    console.error('❌ Recent articles error:', error);
+    log.error('❌ Recent articles error:', error);
     res.status(500).json({
       success: false,
       error: 'Error fetching recent articles',
-      message: error.message,
+      message: 'An internal error occurred',
     });
   }
 });
@@ -431,11 +432,11 @@ router.get('/recent-recordings', authenticateToken, async (req, res) => {
       data: result.recordings || [],
     });
   } catch (error) {
-    console.error('❌ Recent recordings error:', error);
+    log.error('❌ Recent recordings error:', error);
     res.status(500).json({
       success: false,
       error: 'Error fetching recent recordings',
-      message: error.message,
+      message: 'An internal error occurred',
     });
   }
 });
@@ -505,11 +506,11 @@ router.post(
         data: announcement
       });
     } catch (error) {
-      console.error('❌ Error creating announcement:', error);
+      log.error('❌ Error creating announcement:', error);
       res.status(500).json({
         success: false,
         error: 'Error creating announcement',
-        message: error.message
+        message: 'An internal error occurred'
       });
     }
   }
@@ -593,11 +594,11 @@ router.get(
         count: announcementsWithUrls.length
       });
     } catch (error) {
-      console.error('❌ Error fetching announcements:', error);
+      log.error('❌ Error fetching announcements:', error);
       res.status(500).json({
         success: false,
         error: 'Error fetching announcements',
-        message: error.message
+        message: 'An internal error occurred'
       });
     }
   }
@@ -668,11 +669,11 @@ router.get(
         data: announcementWithUrls
       });
     } catch (error) {
-      console.error('❌ Error fetching announcement:', error);
+      log.error('❌ Error fetching announcement:', error);
       res.status(500).json({
         success: false,
         error: 'Error fetching announcement',
-        message: error.message
+        message: 'An internal error occurred'
       });
     }
   }
@@ -712,11 +713,11 @@ router.delete(
         data: announcement
       });
     } catch (error) {
-      console.error('❌ Error deleting announcement:', error);
+      log.error('❌ Error deleting announcement:', error);
       res.status(500).json({
         success: false,
         error: 'Error deleting announcement',
-        message: error.message
+        message: 'An internal error occurred'
       });
     }
   }
@@ -774,7 +775,7 @@ router.post(
         data: attachment
       });
     } catch (error) {
-      console.error('❌ Error uploading attachment:', error);
+      log.error('❌ Error uploading attachment:', error);
       // Clean up uploaded file on error
       if (req.file) {
         fs.unlinkSync(req.file.path);
@@ -782,7 +783,7 @@ router.post(
       res.status(500).json({
         success: false,
         error: 'Error uploading attachment',
-        message: error.message
+        message: 'An internal error occurred'
       });
     }
   }
@@ -841,11 +842,11 @@ router.get(
         data: attachmentsWithUrls
       });
     } catch (error) {
-      console.error('❌ Error fetching attachments:', error);
+      log.error('❌ Error fetching attachments:', error);
       res.status(500).json({
         success: false,
         error: 'Error fetching attachments',
-        message: error.message
+        message: 'An internal error occurred'
       });
     }
   }
@@ -863,10 +864,10 @@ router.get(
       const { clientId, permissions } = req.user;
       const isBPOAdmin = permissions.includes('admin_clients');
 
-      console.log('🔍 File access request:');
-      console.log('   User clientId:', clientId, 'type:', typeof clientId);
-      console.log('   User permissions:', permissions);
-      console.log('   Is BPO Admin:', isBPOAdmin);
+      log.info('🔍 File access request:');
+      log.info('   User clientId:', clientId, 'type:', typeof clientId);
+      log.info('   User permissions:', permissions);
+      log.info('   Is BPO Admin:', isBPOAdmin);
 
       // Check if user has access to this announcement
       const announcement = await prisma.announcement.findUnique({
@@ -883,7 +884,7 @@ router.get(
         });
       }
 
-      console.log('   Announcement recipients:', announcement.recipients.map(r => ({
+      log.info('   Announcement recipients:', announcement.recipients.map(r => ({
         clientId: r.clientId,
         type: typeof r.clientId
       })));
@@ -896,8 +897,8 @@ router.get(
           recipient => recipient.clientId === userClientId
         );
 
-        console.log('   User clientId (normalized):', userClientId);
-        console.log('   Has access:', hasAccess);
+        log.info('   User clientId (normalized):', userClientId);
+        log.info('   Has access:', hasAccess);
 
         if (!hasAccess) {
           return res.status(403).json({
@@ -938,11 +939,11 @@ router.get(
       res.setHeader('Content-Disposition', `inline; filename="${attachment.fileName}"`);
       res.sendFile(filePath);
     } catch (error) {
-      console.error('❌ Error serving attachment:', error);
+      log.error('❌ Error serving attachment:', error);
       res.status(500).json({
         success: false,
         error: 'Error serving attachment',
-        message: error.message
+        message: 'An internal error occurred'
       });
     }
   }
@@ -990,11 +991,11 @@ router.delete(
         message: 'Attachment deleted successfully'
       });
     } catch (error) {
-      console.error('❌ Error deleting attachment:', error);
+      log.error('❌ Error deleting attachment:', error);
       res.status(500).json({
         success: false,
         error: 'Error deleting attachment',
-        message: error.message
+        message: 'An internal error occurred'
       });
     }
   }

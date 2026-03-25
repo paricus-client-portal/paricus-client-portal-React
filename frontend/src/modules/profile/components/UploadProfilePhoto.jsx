@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Box,
   Button,
@@ -34,7 +34,7 @@ export const getAvatarSrc = (avatarUrl) =>
 export const UploadProfilePhoto = ({ open, onClose, onNotification }) => {
   const { t } = useTranslation();
   const dispatch = useDispatch();
-  const user = useSelector((state) => state.auth.user);
+  const { user, token, tokenExpiry } = useSelector((state) => state.auth);
 
   const [uploadAvatar, { isLoading: isUploadingAvatar }] =
     useUploadAvatarMutation();
@@ -48,12 +48,19 @@ export const UploadProfilePhoto = ({ open, onClose, onNotification }) => {
 
   const initials = `${user?.firstName?.[0] || ""}${user?.lastName?.[0] || ""}`.toUpperCase();
 
+  // Cleanup blob URL on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+    };
+  }, [avatarPreview]);
+
   const updateAuthState = (avatarUrl) => {
     dispatch(
       setCredentials({
-        token: localStorage.getItem("token"),
+        token,
         user: { ...user, avatarUrl },
-        tokenExpiry: localStorage.getItem("tokenExpiry"),
+        tokenExpiry,
       }),
     );
   };

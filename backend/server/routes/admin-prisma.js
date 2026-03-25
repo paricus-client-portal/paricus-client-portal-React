@@ -13,6 +13,7 @@ import {
   sanitizeInput
 } from '../middleware/validation.js';
 import { cache, CACHE_TYPES, invalidateClientCache, invalidatePatternCache } from '../middleware/cache.js';
+import log from '../utils/console-logger.js';
 import {
   logUserCreate,
   logUserUpdate,
@@ -91,7 +92,7 @@ router.get('/clients', requireAdminClients, cache({ type: CACHE_TYPES.MEDIUM, ke
       }))
     });
   } catch (error) {
-    console.error('Get clients error:', error);
+    log.error('Get clients error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -128,7 +129,7 @@ router.get('/clients/:id', requireAdminClients, validateId, async (req, res) => 
 
     res.json({ client });
   } catch (error) {
-    console.error('Get client error:', error);
+    log.error('Get client error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -162,7 +163,7 @@ router.post('/clients',
       client
     });
   } catch (error) {
-    console.error('Create client error:', error);
+    log.error('Create client error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -215,7 +216,7 @@ router.put('/clients/:id',
     if (error.code === 'P2025') {
       return res.status(404).json({ error: 'Client not found' });
     }
-    console.error('Update client error:', error);
+    log.error('Update client error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -241,7 +242,7 @@ router.delete('/clients/:id', requireAdminClients, validateId, async (req, res) 
     if (error.code === 'P2025') {
       return res.status(404).json({ error: 'Client not found' });
     }
-    console.error('Deactivate client error:', error);
+    log.error('Deactivate client error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -313,7 +314,7 @@ router.get('/users', requireAdminUsers, validateClientQuery, async (req, res) =>
       }))
     });
   } catch (error) {
-    console.error('Get users error:', error);
+    log.error('Get users error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -398,7 +399,7 @@ router.post('/users',
     if (error.code === 'P2002') {
       return res.status(400).json({ error: 'Email already exists' });
     }
-    console.error('Create user error:', error);
+    log.error('Create user error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -465,7 +466,7 @@ router.put('/users/:id',
     if (error.code === 'P2025') {
       return res.status(404).json({ error: 'User not found' });
     }
-    console.error('Update user error:', error);
+    log.error('Update user error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -490,7 +491,7 @@ router.delete('/users/:id', requireAdminUsers, validateId, async (req, res) => {
     if (error.code === 'P2025') {
       return res.status(404).json({ error: 'User not found' });
     }
-    console.error('Deactivate user error:', error);
+    log.error('Deactivate user error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -562,15 +563,16 @@ router.get('/roles', requireAdminUsers, async (req, res) => {
       }))
     });
   } catch (error) {
-    console.error('Get roles error:', error);
+    log.error('Get roles error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // POST /api/admin/roles - Create new role
-router.post('/roles', 
-  sanitizeInput(['roleName', 'description']), 
-  roleValidation.create, 
+router.post('/roles',
+  authenticateToken,
+  sanitizeInput(['roleName', 'description']),
+  roleValidation.create,
   async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -622,13 +624,13 @@ router.post('/roles',
     if (error.code === 'P2002') {
       return res.status(400).json({ error: 'Role name already exists for this client' });
     }
-    console.error('Create role error:', error);
+    log.error('Create role error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // PUT /api/admin/roles/:id - Update role information (name, description)
-router.put('/roles/:id', [
+router.put('/roles/:id', authenticateToken, [
   body('roleName').optional().trim().isLength({ min: 1 }).withMessage('Role name is required'),
   body('description').optional().trim(),
   body('clientId').optional().isInt({ min: 1 }).withMessage('Valid client ID is required')
@@ -683,13 +685,13 @@ router.put('/roles/:id', [
     if (error.code === 'P2002') {
       return res.status(400).json({ error: 'Role name already exists for this client' });
     }
-    console.error('Update role error:', error);
+    log.error('Update role error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // GET /api/admin/roles/:id/permissions - Get permissions for a specific role
-router.get('/roles/:id/permissions', async (req, res) => {
+router.get('/roles/:id/permissions', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -723,27 +725,27 @@ router.get('/roles/:id/permissions', async (req, res) => {
       }))
     });
   } catch (error) {
-    console.error('Error fetching role permissions:', error);
+    log.error('Error fetching role permissions:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // PUT /api/admin/roles/:id/permissions - Update role permissions
-router.put('/roles/:id/permissions', [
+router.put('/roles/:id/permissions', authenticateToken, [
   body('permissions').isArray().withMessage('Permission IDs must be an array')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      console.error('Validation errors:', errors.array());
+      log.error('Validation errors:', errors.array());
       return res.status(400).json({ errors: errors.array() });
     }
 
     const { id } = req.params;
     const { permissions: permissionIds } = req.body;
 
-    console.log('Updating permissions for role ID:', id);
-    console.log('Permission IDs:', permissionIds);
+    log.info('Updating permissions for role ID:', id);
+    log.info('Permission IDs:', permissionIds);
 
     // Get role information and old permissions before update
     const role = await prisma.role.findUnique({
@@ -776,7 +778,7 @@ router.put('/roles/:id/permissions', [
           permissionId: parseInt(permissionId)
         }));
 
-        console.log('Creating role permissions:', rolePermissions);
+        log.info('Creating role permissions:', rolePermissions);
 
         await tx.rolePermission.createMany({
           data: rolePermissions
@@ -830,15 +832,14 @@ router.put('/roles/:id/permissions', [
       message: 'Role permissions updated successfully'
     });
   } catch (error) {
-    console.error('Update role permissions error:', error);
-    console.error('Error details:', error.message);
-    console.error('Stack:', error.stack);
-    res.status(500).json({ error: 'Internal server error', details: error.message });
+    log.error('Update role permissions error:', error);
+    log.error('Error details:', error.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // DELETE /api/admin/roles/:id - Delete a role
-router.delete('/roles/:id', async (req, res) => {
+router.delete('/roles/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -882,13 +883,13 @@ router.delete('/roles/:id', async (req, res) => {
     if (error.code === 'P2025') {
       return res.status(404).json({ error: 'Role not found' });
     }
-    console.error('Delete role error:', error);
+    log.error('Delete role error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // GET /api/admin/permissions - List all available permissions
-router.get('/permissions', cache({ type: CACHE_TYPES.LONG, keyPrefix: 'permissions' }), async (req, res) => {
+router.get('/permissions', authenticateToken, cache({ type: CACHE_TYPES.LONG, keyPrefix: 'permissions' }), async (req, res) => {
   try {
     const permissions = await prisma.permission.findMany({
       orderBy: {
@@ -898,7 +899,7 @@ router.get('/permissions', cache({ type: CACHE_TYPES.LONG, keyPrefix: 'permissio
 
     res.json({ permissions });
   } catch (error) {
-    console.error('Get permissions error:', error);
+    log.error('Get permissions error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -908,7 +909,7 @@ router.get('/permissions', cache({ type: CACHE_TYPES.LONG, keyPrefix: 'permissio
 // ============================================
 
 // GET /api/admin/reports - List reports for a client
-router.get('/reports', async (req, res) => {
+router.get('/reports', authenticateToken, async (req, res) => {
   try {
     const { clientId } = req.query;
     const where = {};
@@ -950,13 +951,13 @@ router.get('/reports', async (req, res) => {
       }))
     });
   } catch (error) {
-    console.error('Get reports error:', error);
+    log.error('Get reports error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // POST /api/admin/reports - Create a new report record
-router.post('/reports', [
+router.post('/reports', authenticateToken, [
   body('clientId').isInt({ min: 1 }).withMessage('Valid client ID is required'),
   body('name').trim().isLength({ min: 1 }).withMessage('Report name is required'),
   body('type').isIn(['daily', 'weekly', 'monthly', 'custom']).withMessage('Valid report type is required'),
@@ -1020,13 +1021,13 @@ router.post('/reports', [
       }
     });
   } catch (error) {
-    console.error('Create report error:', error);
+    log.error('Create report error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // GET /api/admin/reports/:id/download - Generate download URL
-router.get('/reports/:id/download', async (req, res) => {
+router.get('/reports/:id/download', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -1065,13 +1066,13 @@ router.get('/reports/:id/download', async (req, res) => {
       fileName: `${report.name}.pdf`
     });
   } catch (error) {
-    console.error('Generate download URL error:', error);
+    log.error('Generate download URL error:', error);
     res.status(500).json({ error: 'Failed to generate download URL' });
   }
 });
 
 // DELETE /api/admin/reports/:id - Delete a report
-router.delete('/reports/:id', async (req, res) => {
+router.delete('/reports/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -1102,7 +1103,7 @@ router.delete('/reports/:id', async (req, res) => {
 
     res.json({ message: 'Report deleted successfully' });
   } catch (error) {
-    console.error('Delete report error:', error);
+    log.error('Delete report error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

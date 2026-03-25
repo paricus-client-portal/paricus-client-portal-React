@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import log from '../utils/console-logger.js';
 
 // SQLite-optimized configuration
 export const prisma = new PrismaClient({
@@ -15,7 +16,7 @@ export const prisma = new PrismaClient({
 
 // Optimize SQLite for better concurrent writes
 prisma.$queryRawUnsafe('PRAGMA journal_mode = WAL').catch(() => {
-  console.log('⚠️  WAL mode not available, using default journal mode');
+  log.info('⚠️  WAL mode not available, using default journal mode');
 });
 prisma.$queryRawUnsafe('PRAGMA busy_timeout = 5000').catch(() => {});
 prisma.$queryRawUnsafe('PRAGMA synchronous = NORMAL').catch(() => {});
@@ -24,9 +25,9 @@ prisma.$queryRawUnsafe('PRAGMA synchronous = NORMAL').catch(() => {});
 export async function initializePrisma() {
   try {
     await prisma.$connect();
-    console.log('✅ Prisma connected successfully');
+    log.info('✅ Prisma connected successfully');
   } catch (error) {
-    console.error('❌ Failed to connect to Prisma:', error);
+    log.error('❌ Failed to connect to Prisma:', error);
     throw error;
   }
 }

@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { authenticateToken } from './auth-prisma.js';
+import log from '../utils/console-logger.js';
 
 // In-memory store for CSRF tokens (in production, use Redis or similar)
 const csrfTokens = new Map();
@@ -78,7 +79,7 @@ export const validateCSRFToken = (req, res, next) => {
 
   if (!tokenData) {
     // Token not found - generate a new one and send it back
-    console.log('CSRF token not found, generating new one');
+    log.debug('CSRF token not found, generating new one');
     const newToken = crypto.randomBytes(32).toString('hex');
     const expires = Date.now() + (24 * 60 * 60 * 1000); // 24 hours
 
@@ -124,7 +125,7 @@ export const validateCSRFToken = (req, res, next) => {
 
   // For authenticated requests, only check user match if userId was set when token was created
   if (req.user && tokenData.userId && req.user.id !== tokenData.userId) {
-    console.log(`CSRF user mismatch: token userId=${tokenData.userId}, request userId=${req.user.id}`);
+    log.warn('CSRF user mismatch detected');
     return res.status(403).json({
       error: 'CSRF token mismatch',
       message: 'CSRF token does not match current user'

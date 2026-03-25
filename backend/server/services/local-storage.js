@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import log from '../utils/console-logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,7 +27,7 @@ async function ensureDir(dirPath) {
  */
 export async function initializeLocalStorage() {
   await ensureDir(STORAGE_ROOT);
-  console.log('Local file storage initialized at:', STORAGE_ROOT);
+  log.info('Local file storage initialized at:', STORAGE_ROOT);
 }
 
 /**
@@ -66,7 +67,7 @@ export async function deleteLocalFile(key) {
     await fs.unlink(filePath);
     return true;
   } catch (error) {
-    console.error('Error deleting local file:', error);
+    log.error('Error deleting local file:', error);
     return false;
   }
 }
@@ -108,7 +109,7 @@ export async function listLocalFiles(prefix) {
 
     return files;
   } catch (error) {
-    console.error('Error listing local files:', error);
+    log.error('Error listing local files:', error);
     return [];
   }
 }
@@ -144,7 +145,7 @@ export async function listLocalClientFolders() {
 
     return folders;
   } catch (error) {
-    console.error('Error listing local client folders:', error);
+    log.error('Error listing local client folders:', error);
     return [];
   }
 }
@@ -180,7 +181,7 @@ export async function getLocalFileMetadata(key) {
       created: stats.birthtime
     };
   } catch (error) {
-    console.error('Error getting local file metadata:', error);
+    log.error('Error getting local file metadata:', error);
     return null;
   }
 }

@@ -2,6 +2,7 @@ import { S3Client, GetObjectCommand, PutObjectCommand, ListObjectsV2Command, Del
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import * as localStorage from './local-storage.js';
 import config from '../config/environment.js';
+import log from '../utils/console-logger.js';
 
 // Check if S3 credentials are configured
 const isS3Configured = () => {
@@ -33,13 +34,13 @@ if (isS3Configured()) {
         secretAccessKey: config.aws.secretAccessKey,
       },
     });
-    console.log('✅ S3 client configured successfully');
+    log.info('✅ S3 client configured successfully');
   } catch (error) {
-    console.warn('⚠️  WARNING: Failed to initialize S3 client:', error.message);
+    log.warn('⚠️  WARNING: Failed to initialize S3 client:', error.message);
   }
 } else {
-  console.warn('⚠️  WARNING: S3 credentials not configured. File storage features will be disabled.');
-  console.warn('   Set AWS credentials in .env file');
+  log.warn('⚠️  WARNING: S3 credentials not configured. File storage features will be disabled.');
+  log.warn('   Set AWS credentials in .env file');
 }
 
 const BUCKET_NAME = config.aws.bucketName || 'paricus-reports';
@@ -70,7 +71,7 @@ export async function generateDownloadUrl(key, bucket = BUCKET_NAME) {
 
     return presignedUrl;
   } catch (error) {
-    console.error('Error generating download URL:', error);
+    log.error('Error generating download URL:', error);
     throw new Error('Failed to generate download URL');
   }
 }
@@ -100,7 +101,7 @@ export async function generateUploadUrl(key, contentType, bucket = BUCKET_NAME) 
 
     return presignedUrl;
   } catch (error) {
-    console.error('Error generating upload URL:', error);
+    log.error('Error generating upload URL:', error);
     throw new Error('Failed to generate upload URL');
   }
 }
@@ -110,11 +111,8 @@ export async function generateUploadUrl(key, contentType, bucket = BUCKET_NAME) 
  * @returns {Promise<Array>} - Array of client folder names
  */
 export async function listClientFolders() {
-  console.log('[listClientFolders] s3Client:', s3Client ? 'configured' : 'not configured');
   if (!s3Client) {
-    console.log('[listClientFolders] Using local storage');
     const folders = await localStorage.listLocalClientFolders();
-    console.log('[listClientFolders] Found folders:', folders);
     return folders;
   }
 
@@ -135,7 +133,7 @@ export async function listClientFolders() {
 
     return folders;
   } catch (error) {
-    console.error('Error listing client folders:', error);
+    log.error('Error listing client folders:', error);
     return [];
   }
 }
@@ -147,7 +145,6 @@ export async function listClientFolders() {
  */
 export async function listClientReports(clientFolderName) {
   if (!s3Client) {
-    console.log('S3 client not configured, using local storage');
     const prefix = `client-access-reports/${clientFolderName}/bi-reports/`;
     const files = await localStorage.listLocalFiles(prefix);
     return files.filter(f => f.key.endsWith('.pdf')).map(f => ({
@@ -180,7 +177,7 @@ export async function listClientReports(clientFolderName) {
 
     return reports;
   } catch (error) {
-    console.error('Error listing client reports:', error);
+    log.error('Error listing client reports:', error);
     return [];
   }
 }
@@ -239,7 +236,7 @@ export async function deleteS3Object(key, bucket = BUCKET_NAME) {
     await s3Client.send(command);
     return true;
   } catch (error) {
-    console.error('Error deleting S3 object:', error);
+    log.error('Error deleting S3 object:', error);
     throw new Error('Failed to delete file from S3');
   }
 }
@@ -251,14 +248,12 @@ export async function deleteS3Object(key, bucket = BUCKET_NAME) {
  */
 export async function listClientInvoices(clientFolderName) {
   if (!s3Client) {
-    console.warn('S3 client not configured, returning empty invoices list');
+    log.warn('S3 client not configured, returning empty invoices list');
     return [];
   }
 
   try {
-    console.log('DEBUG: Listing invoices for client:', clientFolderName);
     const prefix = `client-access-reports/${clientFolderName}/invoices/`;
-    console.log('DEBUG: Using prefix:', prefix);
 
     const command = new ListObjectsV2Command({
       Bucket: BUCKET_NAME,
@@ -267,14 +262,8 @@ export async function listClientInvoices(clientFolderName) {
 
     const response = await s3Client.send(command);
 
-    console.log('DEBUG: S3 response Contents count:', response.Contents?.length || 0);
-    console.log('DEBUG: First few objects:', response.Contents?.slice(0, 3).map(obj => obj.Key));
-
     const invoiceObjects = response.Contents?.filter(obj => {
-      const isNotFolder = obj.Key !== prefix;
-      const isPdf = obj.Key.endsWith('.pdf');
-      console.log('DEBUG: Object:', obj.Key, 'isNotFolder:', isNotFolder, 'isPdf:', isPdf);
-      return isNotFolder && isPdf;
+      return obj.Key !== prefix && obj.Key.endsWith('.pdf');
     }) || [];
 
     // Fetch metadata for each invoice to get payment link
@@ -292,12 +281,9 @@ export async function listClientInvoices(clientFolderName) {
       })
     );
 
-    console.log('DEBUG: Final invoices count:', invoices.length);
-    console.log('DEBUG: Invoice filenames:', invoices.map(inv => inv.fileName));
-
     return invoices;
   } catch (error) {
-    console.error('Error listing client invoices:', error);
+    log.error('Error listing client invoices:', error);
     return [];
   }
 }
@@ -323,7 +309,7 @@ export function generateClientInvoiceKey(clientFolderName, fileName) {
  */
 export async function getS3ObjectMetadata(key, bucket = BUCKET_NAME) {
   if (!s3Client) {
-    console.warn('S3 client not configured, returning empty metadata');
+    log.warn('S3 client not configured, returning empty metadata');
     return {};
   }
 
@@ -336,7 +322,7 @@ export async function getS3ObjectMetadata(key, bucket = BUCKET_NAME) {
     const response = await s3Client.send(command);
     return response.Metadata || {};
   } catch (error) {
-    console.error('Error getting S3 object metadata:', error);
+    log.error('Error getting S3 object metadata:', error);
     return {};
   }
 }
@@ -365,7 +351,7 @@ export async function setS3ObjectMetadata(key, metadata, bucket = BUCKET_NAME) {
     await s3Client.send(command);
     return true;
   } catch (error) {
-    console.error('Error setting S3 object metadata:', error);
+    log.error('Error setting S3 object metadata:', error);
     throw new Error('Failed to set object metadata');
   }
 }
@@ -393,7 +379,7 @@ export async function generateAudioDownloadUrl(audioFileName) {
 
     return presignedUrl;
   } catch (error) {
-    console.error('Error generating audio download URL:', error);
+    log.error('Error generating audio download URL:', error);
     throw new Error('Failed to generate audio download URL');
   }
 }
