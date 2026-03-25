@@ -72,13 +72,8 @@ router.get('/test', authenticateToken, requirePermission('admin_audio_recordings
     // Debug: Log environment variables
     log.info('MSSQL Environment Variables:');
     log.info('MSSQL_SERVER:', process.env.MSSQL_SERVER);
-    log.info('MSSQL_USER:', process.env.MSSQL_USER);
-    log.info('MSSQL_PASSWORD:', process.env.MSSQL_PASSWORD ? '***SET***' : 'NOT SET');
-    log.info('MSSQL_DATABASE:', process.env.MSSQL_DATABASE);
-    log.info('MSSQL_PORT:', process.env.MSSQL_PORT);
-
     const result = await testConnection();
-    res.json(result);
+    res.json({ success: result.success, message: result.success ? 'Connection successful' : 'Connection failed' });
   } catch (error) {
     log.error('Error testing SQL Server connection:', error);
     res.status(500).json({
@@ -309,7 +304,7 @@ router.get('/:interactionId/audio-url', authenticateToken, checkAudioRecordingsP
             userId: req.user.id.toString(),
             eventType: 'AUDIO_PLAYBACK',
             entity: 'AudioRecording',
-            description: `Failed to access audio recording: ${interactionId} - ${error.message}`,
+            description: `Failed to access audio recording: ${interactionId}`,
             status: 'FAILURE',
             ipAddress: ipAddress
           }

@@ -61,7 +61,7 @@ export const QuickBroadcastView = () => {
     useCreateAnnouncementMutation();
 
   // Get current user permissions
-  const permissions = useSelector((state) => state.auth.permissions);
+  const { permissions, token: authToken } = useSelector((state) => state.auth);
   const isBPOAdmin = permissions.includes("admin_clients");
 
   // Handle select change
@@ -125,7 +125,7 @@ export const QuickBroadcastView = () => {
 
       // Upload attachments if any
       if (attachments.length > 0 && result.data?.id) {
-        const token = localStorage.getItem("token");
+        const token = authToken;
 
         for (const file of attachments) {
           const formData = new FormData();

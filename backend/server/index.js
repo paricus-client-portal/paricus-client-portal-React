@@ -216,16 +216,12 @@ app.get('/api/s3-test', async (req, res) => {
     res.json({
       success: true,
       message: 'S3 connection successful',
-      bucket: getBucketName(),
-      testUploadUrl: uploadUrl,
-      region: process.env.AWS_REGION
     });
   } catch (error) {
     log.error('S3 test failed:', error);
     res.status(500).json({
       success: false,
       message: 'S3 connection failed',
-      error: error.message
     });
   }
 });

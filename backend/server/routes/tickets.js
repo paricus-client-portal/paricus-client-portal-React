@@ -306,7 +306,7 @@ router.get('/', authenticateToken, async (req, res) => {
     res.json({ data: processedTickets });
   } catch (error) {
     log.error('Error fetching tickets:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -352,7 +352,7 @@ router.get('/departments', authenticateToken, async (req, res) => {
     res.json({ data: formattedDepartments });
   } catch (error) {
     log.error('Error fetching departments:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -437,7 +437,7 @@ router.get('/assignable-users', authenticateToken, async (req, res) => {
     res.json({ data: formattedUsers });
   } catch (error) {
     log.error('Error fetching assignable users:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -515,7 +515,7 @@ router.get('/change-requests', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     log.error('Error fetching change requests:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -622,7 +622,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
     res.json({ data: processedTicket });
   } catch (error) {
     log.error('Error fetching ticket:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -757,7 +757,7 @@ router.post('/', authenticateToken, async (req, res) => {
     res.status(201).json({ data: ticketWithParsedDescription });
   } catch (error) {
     log.error('Error creating ticket:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -913,7 +913,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
     res.json({ data: ticketWithParsedDescription });
   } catch (error) {
     log.error('Error updating ticket:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1028,7 +1028,7 @@ router.post('/:id/details', authenticateToken, async (req, res) => {
   } catch (error) {
     log.error('❌ Error adding detail:', error);
     log.debug('Error stack:', error.stack);
-    res.status(500).json({ error: error.message || 'Failed to add ticket detail' });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1110,7 +1110,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     res.json({ message: 'Ticket deleted successfully' });
   } catch (error) {
     log.error('Error deleting ticket:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1130,7 +1130,7 @@ router.post('/:id/attachments', authenticateToken, (req, res, next) => {
         }
         return res.status(400).json({ error: `Upload error: ${err.message}` });
       }
-      return res.status(500).json({ error: err.message });
+      return res.status(500).json({ error: 'Internal server error' });
     }
     next();
   });
@@ -1297,9 +1297,7 @@ router.post('/:id/attachments', authenticateToken, (req, res, next) => {
       }
     }
 
-    res.status(500).json({
-      error: error.message || 'Failed to upload attachment. Please try again.'
-    });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1352,7 +1350,7 @@ router.get('/:ticketId/attachments/:attachmentId/url', authenticateToken, async 
     res.json({ url });
   } catch (error) {
     log.error('Error generating attachment URL:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1441,7 +1439,7 @@ router.get('/:ticketId/attachments/:attachmentId/file', authenticateTokenFlexibl
     res.sendFile(filePath);
   } catch (error) {
     log.error('Error serving attachment file:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1534,7 +1532,7 @@ router.delete('/:ticketId/attachments/:attachmentId', authenticateToken, async (
     res.json({ message: 'Attachment deleted successfully' });
   } catch (error) {
     log.error('Error deleting attachment:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1656,12 +1654,7 @@ router.post('/:ticketId/details/:detailId/attachments', authenticateToken, uploa
   } catch (error) {
     log.error('Error uploading detail attachment:', error);
 
-    // SECURITY: Don't expose internal error details in production
-    const errorMessage = process.env.NODE_ENV === 'production'
-      ? 'Failed to upload attachment'
-      : error.message;
-
-    res.status(500).json({ error: errorMessage });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1714,7 +1707,7 @@ router.get('/:ticketId/details/:detailId/attachments/:attachmentId/url', authent
     res.json({ url });
   } catch (error) {
     log.error('Error generating detail attachment URL:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1797,12 +1790,7 @@ router.get('/:ticketId/details/:detailId/attachments/:attachmentId/file', authen
   } catch (error) {
     log.error('Error serving detail attachment file:', error);
 
-    // SECURITY: Don't expose internal error details in production
-    const errorMessage = process.env.NODE_ENV === 'production'
-      ? 'Failed to serve file'
-      : error.message;
-
-    res.status(500).json({ error: errorMessage });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1895,7 +1883,7 @@ router.delete('/:ticketId/details/:detailId/attachments/:attachmentId', authenti
     res.json({ message: 'Detail attachment deleted successfully' });
   } catch (error) {
     log.error('Error deleting detail attachment:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -2027,7 +2015,7 @@ router.post('/:id/change-request', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     log.error('Error creating change request:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -2139,7 +2127,7 @@ router.put('/change-requests/:id/approve', authenticateToken, async (req, res) =
     });
   } catch (error) {
     log.error('Error approving change request:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -2210,7 +2198,7 @@ router.put('/change-requests/:id/reject', authenticateToken, async (req, res) =>
     });
   } catch (error) {
     log.error('Error rejecting change request:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -2276,7 +2264,7 @@ router.get('/:id/change-requests', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     log.error('Error fetching ticket change requests:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

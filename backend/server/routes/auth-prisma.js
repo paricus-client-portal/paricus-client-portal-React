@@ -101,7 +101,7 @@ router.post('/login',
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    log.info('✅ Login successful for:', user.email);
+    log.debug('Login successful');
 
     // Update last login (disabled temporarily due to SQLite timeout issues)
     // await prisma.user.update({

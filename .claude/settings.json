@@ -22,7 +22,12 @@
       "Bash(PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=\"procede\" npx prisma migrate dev --name add_avatar_url_to_user)",
       "Bash(PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION=\"procede\" npx prisma db push --force-reset)",
       "Bash(npx prisma:*)",
-      "Read(//c/desenvolup/FORJA/paricus-client-portal-React/frontend/src/modules/user-management/components/UsersTab/**)"
+      "Read(//c/desenvolup/FORJA/paricus-client-portal-React/frontend/src/modules/user-management/components/UsersTab/**)",
+      "Bash(grep -n \"res.status.*json.*error.*message\" /c/desarrollo/FORJA/paricus-client-portal-React/backend/server/routes/*.js)",
+      "Bash(grep -n \"message.*error\\\\.message\" /c/desarrollo/FORJA/paricus-client-portal-React/backend/server/routes/*.js)",
+      "Bash(grep -r useEffect c:/desarrollo/FORJA/paricus-client-portal-React/frontend/src --include=*.jsx --include=*.js)",
+      "Bash(grep -r \"token\\\\|password\" c:/desarrollo/FORJA/paricus-client-portal-React/frontend/src --include=*.jsx --include=*.js)",
+      "Bash(xargs -I {} grep -l \"createApi\" \"c:/desarrollo/FORJA/paricus-client-portal-React/frontend/src/store/api/{}\")"
     ],
     "additionalDirectories": [
       "c:\\desarrollo\\FORJA\\paricus-client-portal-React\\frontend\\src\\modules\\user-management"

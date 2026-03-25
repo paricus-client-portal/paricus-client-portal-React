@@ -7,7 +7,18 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Local storage root directory (outside of server directory)
-const STORAGE_ROOT = path.join(__dirname, '../../local-storage');
+const STORAGE_ROOT = path.resolve(path.join(__dirname, '../../local-storage'));
+
+/**
+ * Validate that a resolved path is within STORAGE_ROOT (prevents path traversal)
+ */
+function validatePath(filePath) {
+  const resolved = path.resolve(filePath);
+  if (!resolved.startsWith(STORAGE_ROOT)) {
+    throw new Error('Access denied: path outside storage root');
+  }
+  return resolved;
+}
 
 /**
  * Ensure a directory exists
@@ -37,7 +48,7 @@ export async function initializeLocalStorage() {
  * @returns {Promise<string>} - Local file path
  */
 export async function saveLocalFile(key, buffer) {
-  const filePath = path.join(STORAGE_ROOT, key);
+  const filePath = validatePath(path.join(STORAGE_ROOT, key));
   const dirPath = path.dirname(filePath);
 
   await ensureDir(dirPath);
@@ -52,7 +63,7 @@ export async function saveLocalFile(key, buffer) {
  * @returns {Promise<Buffer>} - File content
  */
 export async function readLocalFile(key) {
-  const filePath = path.join(STORAGE_ROOT, key);
+  const filePath = validatePath(path.join(STORAGE_ROOT, key));
   return await fs.readFile(filePath);
 }
 
@@ -63,7 +74,7 @@ export async function readLocalFile(key) {
  */
 export async function deleteLocalFile(key) {
   try {
-    const filePath = path.join(STORAGE_ROOT, key);
+    const filePath = validatePath(path.join(STORAGE_ROOT, key));
     await fs.unlink(filePath);
     return true;
   } catch (error) {
@@ -79,7 +90,7 @@ export async function deleteLocalFile(key) {
  */
 export async function listLocalFiles(prefix) {
   try {
-    const dirPath = path.join(STORAGE_ROOT, prefix);
+    const dirPath = validatePath(path.join(STORAGE_ROOT, prefix));
 
     // Check if directory exists
     try {
@@ -157,7 +168,7 @@ export async function listLocalClientFolders() {
  */
 export async function localFileExists(key) {
   try {
-    const filePath = path.join(STORAGE_ROOT, key);
+    const filePath = validatePath(path.join(STORAGE_ROOT, key));
     await fs.access(filePath);
     return true;
   } catch {
@@ -172,7 +183,7 @@ export async function localFileExists(key) {
  */
 export async function getLocalFileMetadata(key) {
   try {
-    const filePath = path.join(STORAGE_ROOT, key);
+    const filePath = validatePath(path.join(STORAGE_ROOT, key));
     const stats = await fs.stat(filePath);
 
     return {
