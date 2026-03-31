@@ -62,11 +62,7 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// Log all requests for debugging (only in development)
-app.use((req, res, next) => {
-  log.debug(`📥 ${req.method} ${req.path}`);
-  next();
-});
+// Request logging removed for security
 
 // Enhanced security middleware
 app.use(helmet({
@@ -294,14 +290,7 @@ async function startServer() {
     log.info('Database initialized successfully');
 
     app.listen(PORT, () => {
-      log.info('\n' + '='.repeat(60));
-      log.info('🚀 SERVER STARTED SUCCESSFULLY');
-      log.info('='.repeat(60));
-      log.info(`📦 Environment: ${config.nodeEnv.toUpperCase()}`);
-      log.info(`🌐 Port: ${PORT}`);
-      log.info(`🔗 Client URL: ${config.clientUrl}`);
-      log.info(`💾 Storage Mode: ${config.storageMode.toUpperCase()}`);
-      log.info('='.repeat(60));
+      log.info('SERVER STARTED SUCCESSFULLY');
     });
   } catch (error) {
     log.error('Failed to start server:', error);
