@@ -36,6 +36,7 @@ import {
   reportsCardSelected,
 } from "../../../common/styles/styles";
 import { DownloadButton } from "../../../common/components/ui/DownloadButton";
+import { ViewButton } from "../../../common/components/ui/ViewButton";
 import { DeleteButton } from "../../../common/components/ui/DeleteButton";
 import { LoadingProgress } from "../../../common/components/ui/LoadingProgress";
 
@@ -44,6 +45,7 @@ export const ClientReports = ({
   reports = [],
   loadingReports = false,
   refetchReports,
+  handleViewReport,
   handleDownloadReport,
   handleDeleteReport,
   formatFileSize,
@@ -212,8 +214,14 @@ export const ClientReports = ({
                         spacing={0.5}
                         justifyContent="flex-end"
                       >
+                        <ViewButton
+                          handleClick={(r) => handleViewReport(selectedFolder, r)}
+                          item={report}
+                          title={t("common.view")}
+                          size="small"
+                        />
                         <DownloadButton
-                          handleClick={handleDownloadReport}
+                          handleClick={(r) => handleDownloadReport(selectedFolder, r)}
                           item={report}
                           title={t("reportsManagement.reports.download")}
                         />

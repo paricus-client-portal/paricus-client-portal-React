@@ -9,6 +9,7 @@ import { useTranslation } from "react-i18next";
 import { colors } from "../../../common/styles/styles";
 import { EditButton } from "../../../common/components/ui/EditButton";
 import { DeactivateButton } from "../../../common/components/ui/DeactivateButton";
+import { DeleteButton } from "../../../common/components/ui/DeleteButton";
 import { ColumnHeaderFilter } from "../../../common/components/ui/ColumnHeaderFilter";
 
 /**
@@ -20,6 +21,7 @@ export const useUsersTableConfig = ({
   formatDate,
   openEditDialog,
   updateUserMutation,
+  deleteUserMutation,
   showNotification,
   // Desktop-specific props (optional)
   isBPOAdmin = false,
@@ -131,9 +133,15 @@ export const useUsersTableConfig = ({
             )
           }
         />
+        <DeleteButton
+          handleDelete={(user) => deleteUserMutation(user.id).unwrap()}
+          item={row.original}
+          itemName={row.name}
+          itemType="user"
+        />
       </>
     ),
-    [openEditDialog, updateUserMutation, showNotification, t]
+    [openEditDialog, updateUserMutation, deleteUserMutation, showNotification, t]
   );
 
   // Desktop columns (DataGrid format)

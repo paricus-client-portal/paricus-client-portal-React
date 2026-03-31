@@ -102,7 +102,6 @@ export default function LanguageMenu() {
             arrow
           >
             <MenuItem
-              key={option.code}
               selected={index === selectedIndex}
               label={option.label}
               onClick={(event) => handleMenuItemClick(event, index)}

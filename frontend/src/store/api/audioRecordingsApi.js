@@ -41,7 +41,7 @@ export const audioRecordingsApi = createApi({
     // Get audio URL for a specific recording
     getAudioUrl: builder.query({
       query: (interactionId) => `/${interactionId}/audio-url`,
-      transformResponse: (response) => response.downloadUrl,
+      transformResponse: (response) => response.audioUrl,
       // Force fresh data on every request (no caching) to ensure logs are created
       keepUnusedDataFor: 0,
     }),

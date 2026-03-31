@@ -2,7 +2,7 @@ import { useState } from "react";
 import PropTypes from "prop-types";
 import { Box, Typography, Stack, Collapse, IconButton } from "@mui/material";
 import {
-  Folder as FolderIcon,
+  FolderOpen as FolderIcon,
   Upload as UploadIcon,
   PictureAsPdf as PdfIcon,
   Description as DescriptionIcon,
@@ -12,6 +12,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { UniversalMobilDataTable } from "../../../../common/components/ui/UniversalMobilDataTable";
 import { ActionButton } from "../../../../common/components/ui/ActionButton";
+import { ViewButton } from "../../../../common/components/ui/ViewButton";
 import { DownloadButton } from "../../../../common/components/ui/DownloadButton";
 import { DeleteButton } from "../../../../common/components/ui/DeleteButton";
 import { colors, typography, card } from "../../../../common/styles/styles";
@@ -25,6 +26,7 @@ const ReportsSection = ({
   reports,
   loadingReports,
   onUploadClick,
+  handleViewReport,
   handleDownloadReport,
   handleDeleteReport,
   formatFileSize,
@@ -74,6 +76,7 @@ const ReportsSection = ({
               key={report.key}
               report={report}
               folder={folder}
+              handleViewReport={handleViewReport}
               handleDownloadReport={handleDownloadReport}
               handleDeleteReport={handleDeleteReport}
               formatFileSize={formatFileSize}
@@ -103,6 +106,7 @@ ReportsSection.propTypes = {
 const ReportCard = ({
   report,
   folder,
+  handleViewReport,
   handleDownloadReport,
   handleDeleteReport,
   formatFileSize,
@@ -148,6 +152,11 @@ const ReportCard = ({
           </Typography>
         </Box>
         <Stack direction="row" spacing={0.5}>
+          <ViewButton
+            handleClick={() => handleViewReport(folder, report)}
+            title={t("common.view")}
+            size="small"
+          />
           <DownloadButton
             handleClick={() => handleDownloadReport(folder, report)}
             title={t("reportsManagement.reports.download")}
@@ -213,6 +222,7 @@ export const ClientFoldersMobile = ({
   loadingReports,
   // Actions
   onUploadClick,
+  handleViewReport,
   handleDownloadReport,
   handleDeleteReport,
   // Formatters
@@ -230,6 +240,7 @@ export const ClientFoldersMobile = ({
         reports={reports}
         loadingReports={loadingReports}
         onUploadClick={onUploadClick}
+        handleViewReport={handleViewReport}
         handleDownloadReport={handleDownloadReport}
         handleDeleteReport={handleDeleteReport}
         formatFileSize={formatFileSize}

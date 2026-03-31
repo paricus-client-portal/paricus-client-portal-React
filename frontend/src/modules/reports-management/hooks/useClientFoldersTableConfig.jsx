@@ -41,7 +41,7 @@ export const useClientFoldersTableConfig = ({
           minWidth: 200,
           renderCell: ({ row }) => (
             <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-              <FolderIcon sx={{ fontSize: 32, color: colors.primary }} />
+              <FolderOpenIcon sx={{ fontSize: 32, color: colors.primary }} />
               <Typography
                 variant="body2"
                 fontWeight={500}

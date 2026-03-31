@@ -1,7 +1,7 @@
 import PropTypes from "prop-types";
 import { Box, Typography, Stack, Button } from "@mui/material";
 import {
-  Folder as FolderIcon,
+  FolderOpen as FolderIcon,
   Refresh as RefreshIcon,
   Lock as LockIcon,
 } from "@mui/icons-material";
@@ -30,6 +30,7 @@ export const ClientFolders = ({
   reports = {},
   loadingReports = false,
   fetchReportsForFolder,
+  handleViewReport,
   handleDownloadReport,
   handleDeleteReport,
   formatFileSize,
@@ -72,6 +73,7 @@ export const ClientFolders = ({
     loadingReports,
     // Actions
     onUploadClick: setShowUploadModal,
+    handleViewReport,
     handleDownloadReport,
     handleDeleteReport,
     // Formatters

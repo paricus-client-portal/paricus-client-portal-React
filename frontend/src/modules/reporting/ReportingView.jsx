@@ -29,6 +29,7 @@ import {
   primaryIconButton,
   outlinedIconButton,
   typography,
+  boxTypography,
 } from "../../common/styles/styles";
 import {
   slugToTitle,
@@ -37,6 +38,7 @@ import {
 } from "../../common/utils/formatters";
 import { LoadingProgress } from "../../common/components/ui/LoadingProgress";
 import { logger } from "../../common/utils/logger";
+import HeaderBoxTypography from "../../common/components/ui/HeaderBoxTypography/HeaderBoxTypography";
 
 // Component to display a single folder's reports using RTK Query
 const FolderReportsSection = ({ folder, downloadReport }) => {
@@ -196,19 +198,9 @@ export const ReportingView = () => {
   };
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+    <Box sx={boxTypography.box}>
       {/* Page Header */}
-      <Box sx={{ mb: 2 }}>
-        <Typography
-          variant="h5"
-          sx={{
-            fontWeight: typography.fontWeight.semibold,
-            fontFamily: typography.fontFamily,
-          }}
-        >
-          {t("reporting.title")}
-        </Typography>
-      </Box>
+      <HeaderBoxTypography text={t("reporting.title")} />
 
       {/* Power BI Dashboard */}
       <Card>
@@ -239,7 +231,7 @@ export const ReportingView = () => {
       </Card>
 
       {/* PDF Reports Section */}
-      <Card>
+      <Card sx={{ mt: 2 }}>
         <CardContent sx={{ p: 3 }}>
           <Box
             sx={{
@@ -255,11 +247,7 @@ export const ReportingView = () => {
             <Button
               variant="contained"
               startIcon={
-                loading ? (
-                  <LoadingProgress size={16} />
-                ) : (
-                  <RefreshIcon />
-                )
+                loading ? <LoadingProgress size={16} /> : <RefreshIcon />
               }
               onClick={() => refetch()}
               disabled={loading}

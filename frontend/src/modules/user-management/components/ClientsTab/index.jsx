@@ -16,6 +16,7 @@ import {
   useCreateClientMutation,
   useUpdateClientMutation,
   useDeleteClientMutation,
+  usePermanentDeleteClientMutation,
 } from "../../../../store/api/adminApi";
 import { AddNewClientModal } from "./AddNewClientModal";
 import { AlertInline } from "../../../../common/components/ui/AlertInline";
@@ -36,6 +37,7 @@ export const ClientsTab = () => {
   const [createClient, { isLoading: isCreating }] = useCreateClientMutation();
   const [updateClient, { isLoading: isUpdating }] = useUpdateClientMutation();
   const [deleteClient] = useDeleteClientMutation();
+  const [permanentDeleteClient] = usePermanentDeleteClientMutation();
 
   // Show error notification when query fails
   useEffect(() => {
@@ -106,6 +108,7 @@ export const ClientsTab = () => {
     formatDate,
     handleEdit,
     deleteClient,
+    permanentDeleteClient,
     activateClient: updateClient,
     showNotification,
   });

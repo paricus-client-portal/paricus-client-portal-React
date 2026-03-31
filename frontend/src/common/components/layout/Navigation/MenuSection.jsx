@@ -25,17 +25,18 @@ export const MenuSections = ({
 
   return (
     <>
-      {filteredCommonItems.map((item, index) => (
-        <ListItem key={index} disablePadding sx={{ display: "block" }}>
-          {isMobileDrawer && item.subItems ? (
-            <AccordionMenuItem
-              label={item.label}
-              icon={item.icon}
-              subItems={item.subItems}
-              setTitleState={setTitleState}
-              titleState={titleState}
-            />
-          ) : (
+      {filteredCommonItems.map((item) =>
+        isMobileDrawer && item.subItems ? (
+          <AccordionMenuItem
+            key={item.route || item.label}
+            label={item.label}
+            icon={item.icon}
+            subItems={item.subItems}
+            setTitleState={setTitleState}
+            titleState={titleState}
+          />
+        ) : (
+          <ListItem key={item.route || item.label} disablePadding sx={{ display: "block" }}>
             <ItemMenu
               label={item.label}
               icon={item.icon}
@@ -44,9 +45,9 @@ export const MenuSections = ({
               titleState={titleState}
               open={open}
             />
-          )}
-        </ListItem>
-      ))}
+          </ListItem>
+        )
+      )}
 
       {filteredAdminItems.length > 0 && (
         <Divider
@@ -62,17 +63,18 @@ export const MenuSections = ({
         />
       )}
 
-      {filteredAdminItems.map((item, index) => (
-        <ListItem key={index} disablePadding sx={{ display: "block" }}>
-          {isMobileDrawer && item.subItems ? (
-            <AccordionMenuItem
-              label={item.label}
-              icon={item.icon}
-              subItems={item.subItems}
-              setTitleState={setTitleState}
-              titleState={titleState}
-            />
-          ) : (
+      {filteredAdminItems.map((item) =>
+        isMobileDrawer && item.subItems ? (
+          <AccordionMenuItem
+            key={item.route || item.label}
+            label={item.label}
+            icon={item.icon}
+            subItems={item.subItems}
+            setTitleState={setTitleState}
+            titleState={titleState}
+          />
+        ) : (
+          <ListItem key={item.route || item.label} disablePadding sx={{ display: "block" }}>
             <ItemMenu
               label={item.label}
               icon={item.icon}
@@ -81,9 +83,9 @@ export const MenuSections = ({
               titleState={titleState}
               open={open}
             />
-          )}
-        </ListItem>
-      ))}
+          </ListItem>
+        )
+      )}
     </>
   );
 };

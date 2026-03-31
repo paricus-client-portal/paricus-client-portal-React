@@ -186,9 +186,9 @@ const AccordionRow = ({
             {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
           </IconButton>
         </TableCell>
-        <TableCell component="th" scope="row">
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            {primaryIcon}
+        <TableCell component="th" scope="row" sx={{ maxWidth: 0 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, overflow: "hidden" }}>
+            {typeof primaryIcon === "function" ? primaryIcon(row) : primaryIcon}
             <Box>
               {typeof primaryValue === "string" ? (
                 <Typography variant="body2" fontWeight="medium">
@@ -209,7 +209,7 @@ const AccordionRow = ({
       <TableRow>
         <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={2}>
           <Collapse in={open} timeout="auto" unmountOnExit>
-            <Box sx={{ margin: 2 }}>
+            <Box sx={{ mx: 1, my: 2 }}>
               <Box
                 sx={{
                   display: "flex",
@@ -253,16 +253,18 @@ const AccordionRow = ({
                   return (
                     <Box
                       key={column.field}
-                      sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      sx={{ display: "flex", alignItems: "flex-start", gap: 1, minWidth: 0 }}
                     >
                       <Typography
                         variant="body2"
                         fontWeight="600"
-                        sx={{ minWidth: column.labelWidth || labelWidth }}
+                        sx={{ minWidth: column.labelWidth || labelWidth, flexShrink: 0 }}
                       >
                         {column.headerName || column.field}:
                       </Typography>
-                      {cellContent}
+                      <Box sx={{ minWidth: 0, overflow: "hidden", wordBreak: "break-all" }}>
+                        {cellContent}
+                      </Box>
                     </Box>
                   );
                 })}
@@ -572,7 +574,7 @@ export const UniversalMobilDataTable = ({
 
   // Main table content
   return (
-    <Box sx={{ width: "100%", ...sx }}>
+    <Box sx={{ width: "100%", overflowX: "hidden", ...sx }}>
       {/* Header */}
       {!hideHeader && (
         <Box
@@ -610,9 +612,10 @@ export const UniversalMobilDataTable = ({
             sx={{
               border: `1px solid ${colors.border || "#e0e0e0"}`,
               borderRadius: "1.5rem",
+              overflowX: "hidden",
             }}
           >
-            <Table aria-label="accordion table">
+            <Table aria-label="accordion table" sx={{ tableLayout: "fixed", width: "100%" }}>
               <TableBody>
                 {paginatedRows.map((row) => (
                   <AccordionRow

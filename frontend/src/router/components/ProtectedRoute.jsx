@@ -30,8 +30,8 @@ export const ProtectedRoute = ({
     return <Navigate to={redirectTo} replace />;
   }
 
-  // Verificar si requiere ser super admin (BPO Administration)
-  if (requireSuperAdmin && user?.clientName !== "BPO Administration") {
+  // Verificar si requiere ser super admin (por permiso, no por nombre de cliente)
+  if (requireSuperAdmin && !permissions.includes("admin_clients")) {
     return <Navigate to="/unauthorized" replace />;
   }
 

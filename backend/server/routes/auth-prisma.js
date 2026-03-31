@@ -274,6 +274,14 @@ router.post('/reset-password',
 // Get current user profile
 router.get('/profile', authenticateToken, async (req, res) => {
   try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      include: {
+        client: { select: { name: true } },
+        role: { select: { roleName: true } }
+      }
+    });
+
     res.json({
       user: {
         id: req.user.id,
@@ -281,9 +289,9 @@ router.get('/profile', authenticateToken, async (req, res) => {
         firstName: req.user.firstName,
         lastName: req.user.lastName,
         clientId: req.user.clientId,
-        clientName: req.user.clientName,
+        clientName: user?.client?.name || null,
         roleId: req.user.roleId,
-        roleName: req.user.roleName,
+        roleName: user?.role?.roleName || null,
         permissions: req.user.permissions || []
       }
     });

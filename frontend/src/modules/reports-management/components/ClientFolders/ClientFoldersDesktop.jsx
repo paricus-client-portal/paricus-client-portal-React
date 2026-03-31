@@ -16,7 +16,7 @@ import {
   Collapse,
 } from "@mui/material";
 import {
-  Folder as FolderIcon,
+  FolderOpen as FolderIcon,
   KeyboardArrowDown as KeyboardArrowDownIcon,
   KeyboardArrowUp as KeyboardArrowUpIcon,
   PictureAsPdf as PdfIcon,
@@ -31,6 +31,7 @@ import {
   table,
 } from "../../../../common/styles/styles";
 import { ActionButton } from "../../../../common/components/ui/ActionButton";
+import { ViewButton } from "../../../../common/components/ui/ViewButton";
 import { DownloadButton } from "../../../../common/components/ui/DownloadButton";
 import { DeleteButton } from "../../../../common/components/ui/DeleteButton";
 import { LoadingProgress } from "../../../../common/components/ui/LoadingProgress";
@@ -49,6 +50,7 @@ export const ClientFoldersDesktop = ({
   loadingReports,
   // Actions
   onUploadClick,
+  handleViewReport,
   handleDownloadReport,
   handleDeleteReport,
   // Formatters
@@ -440,6 +442,16 @@ export const ClientFoldersDesktop = ({
                                           spacing={0.5}
                                           justifyContent="flex-end"
                                         >
+                                          <ViewButton
+                                            handleClick={() =>
+                                              handleViewReport(
+                                                row.folder,
+                                                report,
+                                              )
+                                            }
+                                            title={t("common.view")}
+                                            size="small"
+                                          />
                                           <DownloadButton
                                             handleClick={() =>
                                               handleDownloadReport(

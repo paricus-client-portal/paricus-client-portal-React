@@ -54,6 +54,7 @@ export const permissionSections = {
  */
 export const parentChildPermissions = {
   view_dashboard: ["admin_dashboard_config", "dashboard_announcements_inbox", "dashboard_master_repository", "dashboard_swiper", "dashboard_active_tasks"],
+  view_financials: ["admin_invoices", "download_invoices", "pay_invoices", "view_invoices"],
   admin_broadcast: ["broadcast_announcements", "broadcast_swiper", "broadcast_kpi"],
 };
 

@@ -24,7 +24,7 @@ const transformRecordings = (rowsTable, formatDate) => {
     return rowsTable.map((data, index) => ({
       id: index,
       interactionId: data.interaction_id,
-      company: data.companyName,
+      company: data.company_name,
       callType: data.call_type,
       startTime: formatDate(data.start_time),
       endTime: formatDate(data.end_time),
@@ -443,7 +443,7 @@ TableView.propTypes = {
   dataViewInfo: PropTypes.arrayOf(
     PropTypes.shape({
       interaction_id: PropTypes.string.isRequired,
-      companyName: PropTypes.string,
+      company: PropTypes.string,
       call_type: PropTypes.string,
       start_time: PropTypes.string,
       end_time: PropTypes.string,

@@ -24,9 +24,8 @@ export const NavBarOptions = ({ setTitleState }) => {
   const hasClientsPermission = authUser?.permissions?.includes("admin_clients");
   const hasUsersPermission = authUser?.permissions?.includes("admin_users");
   const hasRolesPermission = authUser?.permissions?.includes("admin_roles");
-  // BPO Admin can access logs - check by client name or admin_users permission
-  const isBPOAdmin = authUser?.clientName === "BPO Administration" ||
-                     (hasUsersPermission && hasClientsPermission && hasRolesPermission);
+  // BPO Admin can access logs - check by permission
+  const isBPOAdmin = hasClientsPermission;
 
 
   const [value, setValue] = useState(0);

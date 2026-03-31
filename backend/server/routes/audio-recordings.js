@@ -130,8 +130,8 @@ router.get('/', authenticateToken, async (req, res) => {
     if (hasAudio !== undefined) filters.hasAudio = hasAudio;
 
     // SECURITY: If user is NOT BPO Admin, automatically filter by their company
-    // BPO Admin has clientId = null and full access to see all companies
-    const isBPOAdmin = req.user.clientId === null || req.user.clientId === undefined;
+    // BPO Admin is identified by having admin_clients permission
+    const isBPOAdmin = req.user.permissions?.includes('admin_clients');
 
     if (!isBPOAdmin) {
       // Client Admin: automatically filter by their company

@@ -137,7 +137,7 @@ export const UniversalDataGrid = ({
   if (error) {
     return (
       <AlertInline
-        message={typeof error === "string" ? error : error?.message || "Error loading data"}
+        message={typeof error === "string" ? error : error?.data?.error || t("common.errorLoadingData", "Error loading data")}
         severity="error"
         sx={{ mb: 2 }}
       />

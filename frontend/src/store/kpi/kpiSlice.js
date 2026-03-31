@@ -79,7 +79,7 @@ const loadFromStorage = () => {
 const saveToStorage = (plainState) => {
   try {
     localStorage.setItem("kpiData", JSON.stringify(plainState));
-  } catch {}
+  } catch { /* localStorage unavailable */ }
 };
 
 // Returns true if actual value meets or exceeds the target

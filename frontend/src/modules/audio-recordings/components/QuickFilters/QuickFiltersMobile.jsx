@@ -18,6 +18,7 @@ import {
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import PhoneIcon from "@mui/icons-material/Phone";
 import SupportAgentIcon from "@mui/icons-material/SupportAgent";
+import { LoadingProgress } from "../../../../common/components/ui/LoadingProgress";
 import { useTranslation } from "react-i18next";
 import { colors } from "../../../../common/styles/styles";
 import { UniversalMobilDataTable } from "../../../../common/components/ui/UniversalMobilDataTable";

@@ -167,71 +167,91 @@ export const ReportsManagementView = () => {
     }
   };
 
-  const handleDownloadReport = async (folder, report) => {
+  const getReportUrl = async (folder, fileName) => {
+    const response = await downloadReportQuery({ folder, fileName }).unwrap();
+    if (response.downloadUrl) return response.downloadUrl;
+    const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
+    return `${apiUrl}/reports/download/${encodeURIComponent(folder)}/${encodeURIComponent(fileName)}`;
+  };
+
+  const handleViewReport = async (folder, report) => {
     try {
-      const fileName = report.name;
-      const response = await downloadReportQuery({
-        folder,
-        fileName,
-      }).unwrap();
+      const url = await getReportUrl(folder, report.name);
+      window.open(url, "_blank");
 
-      if (response.downloadUrl) {
-        window.open(response.downloadUrl, "_blank");
-
-        // Log successful download
-        try {
-          await createLog({
-            userId: authUser.id.toString(),
-            eventType: "DOWNLOAD",
-            entity: "Report",
-            description: `Downloaded report ${fileName} from folder ${folder}`,
-            status: "SUCCESS",
-          }).unwrap();
-        } catch (logErr) {
-          logger.error("Error logging report download:", logErr);
-        }
+      try {
+        await createLog({
+          userId: authUser.id.toString(),
+          eventType: "VIEW",
+          entity: "Report",
+          description: `Viewed report ${report.name} from folder ${folder}`,
+          status: "SUCCESS",
+        }).unwrap();
+      } catch (logErr) {
+        logger.error("Error logging report view:", logErr);
       }
     } catch (error) {
       showNotification(extractApiError(error, t("reportsManagement.upload.downloadError")), "error");
+    }
+  };
 
-      // Log failed download
+  const handleDownloadReport = async (folder, report) => {
+    try {
+      const url = await getReportUrl(folder, report.name);
+
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = report.name || "report.pdf";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+
       try {
         await createLog({
           userId: authUser.id.toString(),
           eventType: "DOWNLOAD",
           entity: "Report",
-          description: `Failed to download report ${report.name} from folder ${folder}`,
-          status: "FAILURE",
+          description: `Downloaded report ${report.name} from folder ${folder}`,
+          status: "SUCCESS",
         }).unwrap();
       } catch (logErr) {
-        logger.error("Error logging report download failure:", logErr);
+        logger.error("Error logging report download:", logErr);
       }
+    } catch (error) {
+      showNotification(extractApiError(error, t("reportsManagement.upload.downloadError")), "error");
     }
   };
 
   const handleDeleteReport = async (report) => {
-    // La confirmación se maneja en el DeleteButton via modal
-    // Extraer el folder del key del report (formato: "folder/filename")
-    const folder = report.key.split("/")[0];
-    const fileName = report.name;
-
-    await deleteReportMutation({ folder, fileName }).unwrap();
-
-    // Log successful delete
     try {
-      await createLog({
-        userId: authUser.id.toString(),
-        eventType: "DELETE",
-        entity: "Report",
-        description: `Deleted report ${fileName} from folder ${folder}`,
-        status: "SUCCESS",
-      }).unwrap();
-    } catch (logErr) {
-      logger.error("Error logging report deletion:", logErr);
-    }
+      // Key format: "client-access-reports/flex-mobile/bi-reports/filename.pdf"
+      const parts = report.key.split("/");
+      const folder = parts[1]; // flex-mobile
+      const fileName = report.name;
 
-    // Refetch reports for this folder
-    await fetchReportsForFolder(folder);
+      await deleteReportMutation({ folder, fileName }).unwrap();
+
+      try {
+        await createLog({
+          userId: authUser.id.toString(),
+          eventType: "DELETE",
+          entity: "Report",
+          description: `Deleted report ${fileName} from folder ${folder}`,
+          status: "SUCCESS",
+        }).unwrap();
+      } catch (logErr) {
+        logger.error("Error logging report deletion:", logErr);
+      }
+
+      await fetchReportsForFolder(folder);
+      showNotification(t("reportsManagement.upload.deleteSuccess"), "success");
+    } catch (error) {
+      showNotification(extractApiError(error, t("reportsManagement.upload.deleteError")), "error");
+    }
   };
 
   const resetUploadForm = () => {
@@ -328,6 +348,7 @@ export const ReportsManagementView = () => {
           reports={allReports}
           loadingReports={isLoadingAnyReports}
           fetchReportsForFolder={fetchReportsForFolder}
+          handleViewReport={handleViewReport}
           handleDownloadReport={handleDownloadReport}
           handleDeleteReport={handleDeleteReport}
           formatFileSize={formatFileSize}
