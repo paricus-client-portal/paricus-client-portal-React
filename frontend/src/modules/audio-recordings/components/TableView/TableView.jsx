@@ -443,7 +443,7 @@ TableView.propTypes = {
   dataViewInfo: PropTypes.arrayOf(
     PropTypes.shape({
       interaction_id: PropTypes.string.isRequired,
-      companyName: PropTypes.string,
+      company: PropTypes.string,
       call_type: PropTypes.string,
       start_time: PropTypes.string,
       end_time: PropTypes.string,

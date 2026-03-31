@@ -20,6 +20,7 @@ import {
   useGetUsersQuery,
   useCreateUserMutation,
   useUpdateUserMutation,
+  useDeleteUserMutation,
   useGetClientsQuery,
   useGetRolesQuery,
 } from "../../../../store/api/adminApi";
@@ -52,6 +53,7 @@ export const UsersTab = () => {
   }, [error, t]);
   const [createUserMutation, { isLoading: creating }] = useCreateUserMutation();
   const [updateUserMutation, { isLoading: updating }] = useUpdateUserMutation();
+  const [deleteUserMutation] = useDeleteUserMutation();
 
   // State
   const [dialog, setDialog] = useState(false);
@@ -199,6 +201,7 @@ export const UsersTab = () => {
     formatDate,
     openEditDialog,
     updateUserMutation,
+    deleteUserMutation,
     showNotification,
     isBPOAdmin,
     selectedClient,

@@ -52,7 +52,7 @@ export const usePermissions = () => {
    * @returns {boolean}
    */
   const isClientAdmin = () => {
-    return user?.roleName === 'Client Admin';
+    return hasPermission('view_invoices') && !isBPOAdmin();
   };
 
   return {

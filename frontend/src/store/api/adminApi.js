@@ -39,6 +39,15 @@ export const adminApi = createApi({
       invalidatesTags: ["Users"],
     }),
 
+    // Permanently delete user
+    deleteUser: builder.mutation({
+      query: (id) => ({
+        url: `/users/${id}/permanent`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Users"],
+    }),
+
     // Get all clients
     getClients: builder.query({
       query: () => "/clients",
@@ -71,6 +80,15 @@ export const adminApi = createApi({
     deleteClient: builder.mutation({
       query: (id) => ({
         url: `/clients/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Clients"],
+    }),
+
+    // Permanently delete client
+    permanentDeleteClient: builder.mutation({
+      query: (id) => ({
+        url: `/clients/${id}/permanent`,
         method: "DELETE",
       }),
       invalidatesTags: ["Clients"],
@@ -160,10 +178,12 @@ export const {
   useGetUsersQuery,
   useCreateUserMutation,
   useUpdateUserMutation,
+  useDeleteUserMutation,
   useGetClientsQuery,
   useCreateClientMutation,
   useUpdateClientMutation,
   useDeleteClientMutation,
+  usePermanentDeleteClientMutation,
   useGetRolesQuery,
   useCreateRoleMutation,
   useUpdateRoleMutation,

@@ -172,8 +172,9 @@ export const useTicketDetailAttachments = (ticketId, detailId, options = {}) => 
 
       // If it's a relative URL, convert to absolute
       if (url.startsWith('/api/')) {
-        const baseUrl = import.meta.env.VITE_API_URL.replace('/api', '');
-        url = `${baseUrl}${url}`;
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+        const path = url.slice(4); // remove "/api" prefix since apiUrl already ends with /api
+        url = `${apiUrl}${path}`;
       }
 
       setImageUrl(url);

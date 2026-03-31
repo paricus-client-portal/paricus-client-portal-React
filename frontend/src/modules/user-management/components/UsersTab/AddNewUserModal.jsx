@@ -34,7 +34,12 @@ const buildSchema = (t, isEditing) =>
     email: z.string().min(1, t("users.form.emailRequired")).email(t("users.form.emailInvalid")),
     password: isEditing
       ? z.string().optional().default("")
-      : z.string().min(8, t("users.form.passwordMinLength")),
+      : z.string()
+          .min(8, t("users.form.passwordMinLength"))
+          .regex(
+            /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/,
+            t("users.form.passwordRequirements", "Must contain uppercase, lowercase, number, and special character (@$!%*?&)")
+          ),
     client_id: z.coerce.number().min(1, t("users.form.clientRequired")),
     role_id: z.coerce.number().min(1, t("users.form.roleRequired")),
   });
@@ -183,6 +188,7 @@ export const AddNewUserModal = ({
                   fullWidth
                   required
                   type="email"
+                  autoComplete="new-email"
                   label={t("users.form.email")}
                   sx={modalCard?.inputSection}
                   error={!!errors.email}
@@ -199,6 +205,7 @@ export const AddNewUserModal = ({
                     {...field}
                     fullWidth
                     required
+                    autoComplete="new-password"
                     label={t("users.form.password")}
                     sx={modalCard?.inputSection}
                     error={!!errors.password}

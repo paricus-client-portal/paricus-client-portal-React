@@ -10,8 +10,11 @@ import {
   generateUploadUrl,
   generateDownloadUrl,
   getBucketName,
-  deleteS3Object
+  deleteS3Object,
+  isS3Configured
 } from '../services/s3.js';
+import { localFileExists, readLocalFile } from '../services/local-storage.js';
+import config from '../config/environment.js';
 import log from '../utils/console-logger.js';
 
 const router = express.Router();
@@ -257,7 +260,7 @@ router.get('/download/:clientFolder/:fileName', [
       }
     }
 
-    // Get the actual reports to find the correct S3 key
+    // Get the actual reports to find the correct key
     const reports = await listClientReports(clientFolder);
     const report = reports.find(r => r.name === fileName || r.key.endsWith(fileName));
 
@@ -265,13 +268,24 @@ router.get('/download/:clientFolder/:fileName', [
       return res.status(404).json({ error: 'Report not found' });
     }
 
-    const downloadUrl = await generateDownloadUrl(report.key);
-
-    res.json({
-      success: true,
-      downloadUrl: downloadUrl,
-      expiresIn: 3600 // 1 hour
-    });
+    // If S3 is configured, generate presigned URL; otherwise serve from local storage
+    if (isS3Configured()) {
+      const downloadUrl = await generateDownloadUrl(report.key);
+      res.json({
+        success: true,
+        downloadUrl: downloadUrl,
+        expiresIn: 3600
+      });
+    } else {
+      const exists = await localFileExists(report.key);
+      if (!exists) {
+        return res.status(404).json({ error: 'Report file not found on disk' });
+      }
+      const fileBuffer = await readLocalFile(report.key);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
+      res.send(fileBuffer);
+    }
 
   } catch (error) {
     log.error('Error generating download URL:', error);

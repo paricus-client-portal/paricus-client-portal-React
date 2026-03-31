@@ -40,6 +40,14 @@ coverage/
 **/prisma/migrations/
 *.db
 *.db-journal
+*.db-shm
+*.db-wal
+
+# SSH Keys & Certificates
+*.pem
+*.key
+*-key
+paricus-back*
 
 # OS
 .DS_Store

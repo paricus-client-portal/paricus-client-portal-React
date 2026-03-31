@@ -20,8 +20,8 @@ export const authenticateToken = async (req, res, next) => {
     
     if (!user) {
       // Get user with role and permissions using Prisma
-      user = await prisma.user.findUnique({
-        where: { 
+      user = await prisma.user.findFirst({
+        where: {
           id: decoded.userId,
           isActive: true
         },
@@ -58,16 +58,14 @@ export const authenticateToken = async (req, res, next) => {
       return res.status(401).json({ error: 'User not found or inactive' });
     }
 
-    // Transform user data to match expected format with consistent naming
+    // Transform user data - only expose what's needed for route handlers
     req.user = {
       id: user.id,
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
       clientId: user.clientId,
-      clientName: user.client?.name || null,
       roleId: user.roleId,
-      roleName: user.role?.roleName,
       permissions: user.role?.rolePermissions.map(rp => rp.permission.permissionName) || []
     };
     
@@ -92,16 +90,3 @@ export const requirePermission = (permission) => {
   };
 };
 
-export const requireRole = (roleName) => {
-  return (req, res, next) => {
-    if (!req.user) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
-
-    if (req.user.roleName !== roleName) {
-      return res.status(403).json({ error: 'Insufficient role permissions' });
-    }
-
-    next();
-  };
-};

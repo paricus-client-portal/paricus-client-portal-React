@@ -204,6 +204,9 @@ export const QuickBroadcastView = () => {
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
             sx={{
+              "& .MuiInputLabel-root.Mui-focused": {
+                color: colors.primary,
+              },
               "& .MuiOutlinedInput-root": {
                 backgroundColor: "white",
                 borderRadius: "0.75rem",

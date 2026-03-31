@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { colors } from "../../../common/styles/styles";
 import { EditButton } from "../../../common/components/ui/EditButton";
 import { DeactivateButton } from "../../../common/components/ui/DeactivateButton";
+import { DeleteButton } from "../../../common/components/ui/DeleteButton";
 import { ColumnHeaderFilter } from "../../../common/components/ui/ColumnHeaderFilter";
 
 /**
@@ -16,6 +17,7 @@ export const useClientsTableConfig = ({
   formatDate,
   handleEdit,
   deleteClient,
+  permanentDeleteClient,
   activateClient,
   showNotification,
   // Desktop-specific filter state (managed internally if not provided)
@@ -188,10 +190,16 @@ export const useClientsTableConfig = ({
               )
             }
           />
+          <DeleteButton
+            handleDelete={(client) => permanentDeleteClient(client.id).unwrap()}
+            item={row.original}
+            itemName={row.name}
+            itemType="client"
+          />
         </>
       );
     },
-    [handleEdit, deleteClient, activateClient, showNotification, t]
+    [handleEdit, deleteClient, permanentDeleteClient, activateClient, showNotification, t]
   );
 
   // Desktop columns (DataGrid format)

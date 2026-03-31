@@ -20,21 +20,21 @@ export const commonValidations = {
     .trim()
     .isLength({ min: 1, max: 255 })
     .withMessage(`${field} must be 1-255 characters long`)
-    .matches(/^[a-zA-Z0-9\s\-_.]+$/)
+    .matches(/^[\p{L}\p{N}\s\-_.]+$/u)
     .withMessage(`${field} contains invalid characters`),
-    
+
   optionalName: (field) => body(field)
     .optional()
     .trim()
     .isLength({ min: 1, max: 255 })
     .withMessage(`${field} must be 1-255 characters long`)
-    .matches(/^[a-zA-Z0-9\s\-_.]+$/)
+    .matches(/^[\p{L}\p{N}\s\-_.]+$/u)
     .withMessage(`${field} contains invalid characters`),
     
   clientId: body('clientId')
     .isInt({ min: 1 })
     .withMessage('Valid client ID is required'),
-    
+
   roleId: body('roleId')
     .optional()
     .isInt({ min: 1 })
@@ -57,6 +57,25 @@ export const validateRequest = (req, res, next) => {
         value: err.value
       }))
     });
+  }
+  next();
+};
+
+/**
+ * Normalize snake_case body fields to camelCase
+ * Ensures frontend can send either format
+ */
+export const normalizeBody = (req, res, next) => {
+  const map = {
+    client_id: 'clientId',
+    role_id: 'roleId',
+    first_name: 'firstName',
+    last_name: 'lastName',
+  };
+  for (const [snake, camel] of Object.entries(map)) {
+    if (req.body[snake] !== undefined && req.body[camel] === undefined) {
+      req.body[camel] = req.body[snake];
+    }
   }
   next();
 };

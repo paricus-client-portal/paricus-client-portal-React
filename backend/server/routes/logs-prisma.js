@@ -13,35 +13,10 @@ router.get('/',
   authenticateToken,
   async (req, res) => {
     try {
-      log.debug('[LOGS API] Request from user:', req.user.id);
-
-      // Check if user has permissions to view logs
-      // Allow BPO Admin users (from BPO Administration client) or users with admin permissions
-      const user = await prisma.user.findUnique({
-        where: { id: req.user.id },
-        include: {
-          client: true,
-          role: {
-            include: {
-              rolePermissions: {
-                include: {
-                  permission: true
-                }
-              }
-            }
-          }
-        }
-      });
-
-      log.debug('[LOGS API] User client:', user?.client?.name);
-
-      // Check if user is BPO Admin (from BPO Administration client)
-      const isBPOAdmin = user?.client?.name === 'BPO Administration';
-
-      log.debug('[LOGS API] Is BPO Admin?', isBPOAdmin);
+      // Check if user has admin permissions (from JWT)
+      const isBPOAdmin = req.user.permissions?.includes('admin_clients');
 
       if (!isBPOAdmin) {
-        log.debug('[LOGS API] Access DENIED');
         return res.status(403).json({
           error: 'Access denied. Only BPO administrators can view logs.'
         });
@@ -137,13 +112,7 @@ router.get('/:id',
   authenticateToken,
   async (req, res) => {
     try {
-      // Check if user is BPO Admin
-      const user = await prisma.user.findUnique({
-        where: { id: req.user.id },
-        include: { client: true }
-      });
-
-      const isBPOAdmin = user?.client?.name === 'BPO Administration';
+      const isBPOAdmin = req.user.permissions?.includes('admin_clients');
 
       if (!isBPOAdmin) {
         return res.status(403).json({
@@ -223,13 +192,7 @@ router.delete('/:id',
   authenticateToken,
   async (req, res) => {
     try {
-      // Check if user is BPO Admin
-      const user = await prisma.user.findUnique({
-        where: { id: req.user.id },
-        include: { client: true }
-      });
-
-      const isBPOAdmin = user?.client?.name === 'BPO Administration';
+      const isBPOAdmin = req.user.permissions?.includes('admin_clients');
 
       if (!isBPOAdmin) {
         return res.status(403).json({

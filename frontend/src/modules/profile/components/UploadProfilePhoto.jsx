@@ -24,12 +24,17 @@ import { ActionButton } from "../../../common/components/ui/ActionButton";
 import { CancelButton } from "../../../common/components/ui/CancelButton";
 import { DeleteButton } from "../../../common/components/ui/DeleteButton";
 
-const API_BASE = (
-  import.meta.env.VITE_API_URL || "http://localhost:3001/api"
-).replace("/api", "");
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
 
-export const getAvatarSrc = (avatarUrl) =>
-  avatarUrl ? `${API_BASE}${avatarUrl}` : null;
+export const getAvatarSrc = (avatarUrl) => {
+  if (!avatarUrl) return null;
+  // avatarUrl from backend: "/api/auth/avatar/filename.jpeg"
+  // API_URL: "https://api-portal.paricus.com/api"
+  // We need: "https://api-portal.paricus.com/api/auth/avatar/filename.jpeg"
+  // Remove "/api" prefix from avatarUrl since API_URL already ends with /api
+  const path = avatarUrl.startsWith("/api") ? avatarUrl.slice(4) : avatarUrl;
+  return `${API_URL}${path}`;
+};
 
 export const UploadProfilePhoto = ({ open, onClose, onNotification }) => {
   const { t } = useTranslation();

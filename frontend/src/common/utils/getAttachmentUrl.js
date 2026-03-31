@@ -1,6 +1,6 @@
 /**
  * Builds an authenticated URL for file attachments.
- * Converts the API base URL to the server root and appends a token for authentication.
+ * Uses VITE_API_URL as base and strips duplicate /api prefix from attachment path.
  *
  * @param {Object} attachment - The attachment object with a `url` property (relative path).
  * @param {string} token - The JWT auth token.
@@ -9,7 +9,8 @@
 export const getAttachmentUrl = (attachment, token) => {
   if (!attachment?.url || !token) return null;
 
-  const baseUrl = import.meta.env.VITE_API_URL.replace("/api", "");
-  const fullUrl = `${baseUrl}${attachment.url}`;
-  return `${fullUrl}?token=${encodeURIComponent(token)}`;
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
+  // attachment.url comes as "/api/tickets/..." — remove "/api" prefix since apiUrl already ends with /api
+  const path = attachment.url.startsWith("/api") ? attachment.url.slice(4) : attachment.url;
+  return `${apiUrl}${path}?token=${encodeURIComponent(token)}`;
 };

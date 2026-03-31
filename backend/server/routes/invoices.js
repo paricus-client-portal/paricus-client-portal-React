@@ -221,10 +221,6 @@ router.post('/upload/:clientFolder',
       return res.status(400).json({ errors: errors.array() });
     }
 
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
-    }
-
     const { clientFolder } = req.params;
     const {
       invoiceName,
@@ -268,25 +264,26 @@ router.post('/upload/:clientFolder',
       return res.status(400).json({ error: 'Due date cannot be before issued date' });
     }
 
-    // Generate S3 key
-    const timestamp = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-    const fileName = `${invoiceName}_${timestamp}.pdf`;
-    const s3Key = generateClientInvoiceKey(clientFolder, fileName);
+    // Upload file to S3 if provided
+    let s3Key = null;
+    let fileSize = null;
 
-    // Generate upload URL
-    const uploadUrl = await generateUploadUrl(s3Key, 'application/pdf');
+    if (req.file) {
+      const timestamp = new Date().toISOString().split('T')[0];
+      const fileName = `${invoiceName}_${timestamp}.pdf`;
+      s3Key = generateClientInvoiceKey(clientFolder, fileName);
 
-    // Upload file to S3 using the presigned URL
-    const uploadResponse = await fetch(uploadUrl, {
-      method: 'PUT',
-      body: req.file.buffer,
-      headers: {
-        'Content-Type': 'application/pdf',
-      },
-    });
+      const uploadUrl = await generateUploadUrl(s3Key, 'application/pdf');
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'PUT',
+        body: req.file.buffer,
+        headers: { 'Content-Type': 'application/pdf' },
+      });
 
-    if (!uploadResponse.ok) {
-      throw new Error('Failed to upload file to S3');
+      if (!uploadResponse.ok) {
+        throw new Error('Failed to upload file to S3');
+      }
+      fileSize = req.file.size;
     }
 
     // Create database record
@@ -305,9 +302,9 @@ router.post('/upload/:clientFolder',
         issuedDate: parsedIssuedDate,
         paymentMethod: paymentMethod || null,
         s3Key: s3Key,
-        s3Bucket: getBucketName(),
-        fileSize: req.file.size,
-        mimeType: 'application/pdf'
+        s3Bucket: s3Key ? getBucketName() : null,
+        fileSize: fileSize,
+        mimeType: s3Key ? 'application/pdf' : null
       },
       include: {
         client: {

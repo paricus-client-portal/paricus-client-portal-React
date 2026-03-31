@@ -10,7 +10,8 @@ import {
   roleValidation,
   validateId,
   validateClientQuery,
-  sanitizeInput
+  sanitizeInput,
+  normalizeBody
 } from '../middleware/validation.js';
 import { cache, CACHE_TYPES, invalidateClientCache, invalidatePatternCache } from '../middleware/cache.js';
 import log from '../utils/console-logger.js';
@@ -247,6 +248,39 @@ router.delete('/clients/:id', requireAdminClients, validateId, async (req, res) 
   }
 });
 
+// DELETE /api/admin/clients/:id/permanent - Permanently delete client
+router.delete('/clients/:id/permanent', requireAdminClients, validateId, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const client = await prisma.client.findUnique({
+      where: { id: parseInt(id) },
+      include: { _count: { select: { users: true } } }
+    });
+
+    if (!client) {
+      return res.status(404).json({ error: 'Client not found' });
+    }
+
+    if (client._count.users > 0) {
+      return res.status(400).json({ error: 'Cannot delete client with assigned users. Please remove or reassign users first.' });
+    }
+
+    await prisma.client.delete({ where: { id: parseInt(id) } });
+
+    invalidatePatternCache('clients');
+    await logClientDelete(req.user.id, client.name);
+
+    res.json({ message: 'Client permanently deleted' });
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'Client not found' });
+    }
+    log.error('Permanent delete client error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // ============================================
 // USER MANAGEMENT ENDPOINTS
 // ============================================
@@ -322,6 +356,7 @@ router.get('/users', requireAdminUsers, validateClientQuery, async (req, res) =>
 // POST /api/admin/users - Create new user
 router.post('/users',
   requireAdminUsers,
+  normalizeBody,
   sanitizeInput(['firstName', 'lastName', 'email']),
   userValidation.create,
   async (req, res) => {
@@ -407,6 +442,7 @@ router.post('/users',
 // PUT /api/admin/users/:id - Update user
 router.put('/users/:id',
   requireAdminUsers,
+  normalizeBody,
   sanitizeInput(['firstName', 'lastName', 'email']),
   userValidation.update,
   async (req, res) => {
@@ -492,6 +528,30 @@ router.delete('/users/:id', requireAdminUsers, validateId, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
     log.error('Deactivate user error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// DELETE /api/admin/users/:id/permanent - Permanently delete user
+router.delete('/users/:id/permanent', requireAdminUsers, validateId, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await prisma.user.findUnique({ where: { id: parseInt(id) } });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    await prisma.user.delete({ where: { id: parseInt(id) } });
+
+    await logUserDelete(req.user.id, user.email);
+
+    res.json({ message: 'User permanently deleted' });
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    log.error('Permanent delete user error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
