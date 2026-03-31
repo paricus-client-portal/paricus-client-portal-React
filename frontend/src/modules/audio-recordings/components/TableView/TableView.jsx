@@ -24,7 +24,7 @@ const transformRecordings = (rowsTable, formatDate) => {
     return rowsTable.map((data, index) => ({
       id: index,
       interactionId: data.interaction_id,
-      company: data.companyName,
+      company: data.company_name,
       callType: data.call_type,
       startTime: formatDate(data.start_time),
       endTime: formatDate(data.end_time),

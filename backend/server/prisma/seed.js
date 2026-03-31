@@ -540,84 +540,9 @@ async function main() {
     },
   });
 
-  // Create sample invoices for testing
-  console.log("📄 Creating sample invoices...");
-
-  // Sample invoices for Flex Mobile
-  const flexInvoices = [
-    {
-      clientId: flexMobileClient.id,
-      invoiceNumber: "INV-FM-2025-001",
-      title: "December 2025 Services",
-      description: "Monthly BPO services for December 2025",
-      amount: 5000.0,
-      currency: "USD",
-      status: "sent",
-      dueDate: new Date("2025-12-15"),
-      issuedDate: new Date("2025-12-01"),
-      s3Key:
-        "client-access-reports/flex-mobile/invoices/2025/invoice-dec-2025.pdf",
-      s3Bucket: "paricus-client-portal",
-      fileSize: 150000,
-      mimeType: "application/pdf",
-      paymentMethod: "credit_card",
-    },
-    {
-      clientId: flexMobileClient.id,
-      invoiceNumber: "INV-FM-2025-002",
-      title: "November 2025 Services",
-      description: "Monthly BPO services for November 2025",
-      amount: 4800.0,
-      currency: "USD",
-      status: "paid",
-      dueDate: new Date("2025-11-15"),
-      issuedDate: new Date("2025-11-01"),
-      paidDate: new Date("2025-11-10"),
-      s3Key:
-        "client-access-reports/flex-mobile/invoices/2025/invoice-nov-2025.pdf",
-      s3Bucket: "paricus-client-portal",
-      fileSize: 145000,
-      mimeType: "application/pdf",
-      paymentMethod: "bank_transfer",
-    },
-  ];
-
-  for (const invoice of flexInvoices) {
-    await prisma.invoice.upsert({
-      where: { invoiceNumber: invoice.invoiceNumber },
-      update: {},
-      create: invoice,
-    });
-  }
-
-  // Sample invoices for IM Telecom
-  const imTelecomInvoices = [
-    {
-      clientId: imTelecomClient.id,
-      invoiceNumber: "INV-IM-2025-001",
-      title: "December 2025 Services",
-      description: "Monthly support services for December 2025",
-      amount: 6500.0,
-      currency: "USD",
-      status: "sent",
-      dueDate: new Date("2025-12-20"),
-      issuedDate: new Date("2025-12-01"),
-      s3Key:
-        "client-access-reports/im-telecom/invoices/2025/invoice-dec-2025.pdf",
-      s3Bucket: "paricus-client-portal",
-      fileSize: 160000,
-      mimeType: "application/pdf",
-      paymentMethod: "credit_card",
-    },
-  ];
-
-  for (const invoice of imTelecomInvoices) {
-    await prisma.invoice.upsert({
-      where: { invoiceNumber: invoice.invoiceNumber },
-      update: {},
-      create: invoice,
-    });
-  }
+  // NOTE: Sample invoices removed from seed.
+  // Invoices should be created via the upload API so s3Keys match real files in S3.
+  console.log("📄 Skipping sample invoices (create via upload API instead).");
 
   // Create mockup users
   console.log("👥 Creating mockup users...");

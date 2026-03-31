@@ -171,7 +171,6 @@ export const InvoicesTableDesktop = ({
                   component="span"
                   sx={{
                     ...getStatusBadgeStyle(invoice.status || "pending"),
-                    ...colors.intranetRed,
                   }}
                 >
                   {(invoice.status || "pending").toUpperCase()}

@@ -320,8 +320,7 @@ export async function getCallRecordings(filters = {}, limit = 100, offset = 0) {
         customer_phone_number,
         agent_name,
         audiofilename,
-        tags,
-        company
+        tags
       FROM calls_report WITH (NOLOCK)
       WHERE call_type = 'inbound'
         AND (tags NOT LIKE '%test%' AND tags NOT LIKE '%demo%')

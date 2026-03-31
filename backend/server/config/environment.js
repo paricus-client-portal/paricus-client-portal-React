@@ -22,7 +22,7 @@ const config = {
   clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
 
   // Base de datos
-  databaseUrl: process.env.DATABASE_URL || 'file:./prisma/dev.db',
+  databaseUrl: process.env.DATABASE_URL || 'postgresql://paricus:paricus@localhost:5432/paricus',
 
   // JWT
   jwtSecret: process.env.JWT_SECRET,
@@ -77,8 +77,8 @@ function validateConfig() {
     errors.push('JWT_SECRET debe tener al menos 32 caracteres');
   }
 
-  if (config.storageMode === 's3' && !config.aws.accessKeyId) {
-    errors.push('AWS_ACCESS_KEY_ID no está configurado y STORAGE_MODE es "s3"');
+  if (config.storageMode === 's3' && !config.aws.region) {
+    errors.push('AWS_REGION no está configurado y STORAGE_MODE es "s3"');
   }
 
   if (errors.length > 0) {

@@ -8,6 +8,10 @@
     "dev": "node index.js",
     "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
+    "db:generate": "npx prisma generate",
+    "db:migrate": "npx prisma migrate dev",
+    "db:seed": "npx prisma db seed",
+    "db:setup": "npx prisma migrate dev && npx prisma db seed",
     "script:seed-tickets": "node prisma/scripts/seed-tickets.js",
     "script:check-tickets": "node prisma/scripts/checkTickets.js",
     "script:test-add-detail": "node prisma/scripts/test-add-detail.js",
@@ -16,6 +20,9 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.914.0",
     "@aws-sdk/s3-request-presigner": "^3.914.0",
@@ -34,7 +41,9 @@
     "node-cache": "^5.1.2",
     "node-fetch": "^3.3.2",
     "nodemailer": "^7.0.9",
-    "prisma": "^6.17.1",
     "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "prisma": "^6.17.1"
   }
 }

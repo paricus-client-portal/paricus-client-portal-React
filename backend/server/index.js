@@ -35,6 +35,9 @@ const __dirname = dirname(__filename);
 const app = express();
 const PORT = config.port;
 
+// Trust first proxy (Nginx) - required for express-rate-limit behind reverse proxy
+app.set('trust proxy', 1);
+
 // CORS Configuration - Must be FIRST
 const corsOptions = {
   origin: function (origin, callback) {
@@ -235,7 +238,7 @@ app.get('/api/health', (req, res) => {
 if (config.isProduction) {
   app.use(express.static(join(__dirname, '../dist')));
 
-  app.get('*', (req, res) => {
+  app.get('/{*splat}', (req, res) => {
     res.sendFile(join(__dirname, '../dist/index.html'));
   });
 }

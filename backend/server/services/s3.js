@@ -4,9 +4,8 @@ import * as localStorage from './local-storage.js';
 import config from '../config/environment.js';
 import log from '../utils/console-logger.js';
 
-// Check if S3 credentials are configured
-const isS3Configured = () => {
-  // Check if credentials exist and are not placeholder values
+// Check if explicit S3 credentials are configured in .env
+const hasExplicitCredentials = () => {
   const hasValidAccessKey = config.aws.accessKeyId &&
     !config.aws.accessKeyId.includes('your_') &&
     !config.aws.accessKeyId.includes('optional');
@@ -15,32 +14,35 @@ const isS3Configured = () => {
     !config.aws.secretAccessKey.includes('your_') &&
     !config.aws.secretAccessKey.includes('optional');
 
-  return !!(
-    config.aws.region &&
-    hasValidAccessKey &&
-    hasValidSecretKey &&
-    config.aws.bucketName
-  );
+  return !!(hasValidAccessKey && hasValidSecretKey);
 };
 
-// S3 Configuration - only create client if credentials are available
+const isS3Configured = () => {
+  return !!(config.aws.region && config.aws.bucketName);
+};
+
+// S3 Configuration - uses explicit credentials or IAM Role (auto-detected by SDK)
 let s3Client = null;
 if (isS3Configured()) {
   try {
-    s3Client = new S3Client({
-      region: config.aws.region,
-      credentials: {
+    const clientConfig = { region: config.aws.region };
+
+    if (hasExplicitCredentials()) {
+      clientConfig.credentials = {
         accessKeyId: config.aws.accessKeyId,
         secretAccessKey: config.aws.secretAccessKey,
-      },
-    });
-    log.info('✅ S3 client configured successfully');
+      };
+      log.info('✅ S3 client configured with explicit credentials');
+    } else {
+      log.info('✅ S3 client configured with IAM Role (auto-detected)');
+    }
+
+    s3Client = new S3Client(clientConfig);
   } catch (error) {
     log.warn('⚠️  WARNING: Failed to initialize S3 client:', error.message);
   }
 } else {
-  log.warn('⚠️  WARNING: S3 credentials not configured. File storage features will be disabled.');
-  log.warn('   Set AWS credentials in .env file');
+  log.warn('⚠️  WARNING: S3 not configured (missing region or bucket name).');
 }
 
 const BUCKET_NAME = config.aws.bucketName || 'paricus-reports';

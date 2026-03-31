@@ -458,14 +458,14 @@ router.put('/:invoiceId', [
   param('invoiceId').isInt().withMessage('Valid invoice ID required'),
   body('title').optional().isString().isLength({ min: 1, max: 200 }).withMessage('Title must be 1-200 characters'),
   body('description').optional().isString().isLength({ max: 1000 }).withMessage('Description must be max 1000 characters'),
-  body('amount').optional().isFloat({ min: 0 }).withMessage('Amount must be a positive number'),
+  body('amount').optional().isNumeric().withMessage('Amount must be a valid number'),
   body('currency').optional().isString().isLength({ min: 3, max: 3 }).withMessage('Currency must be 3-letter code'),
   body('status').optional().isIn(['draft', 'sent', 'viewed', 'paid', 'overdue', 'cancelled']).withMessage('Invalid status'),
   body('dueDate').optional().isISO8601().withMessage('Due date must be valid date'),
   body('issuedDate').optional().isISO8601().withMessage('Issued date must be valid date'),
   body('paidDate').optional().isISO8601().withMessage('Paid date must be valid date'),
-  body('paymentMethod').optional().isString().isLength({ max: 50 }).withMessage('Payment method must be max 50 characters'),
-  body('notes').optional().isString().isLength({ max: 1000 }).withMessage('Notes must be max 1000 characters')
+  body('paymentMethod').optional({ nullable: true }).isString().isLength({ max: 50 }).withMessage('Payment method must be max 50 characters'),
+  body('notes').optional({ nullable: true }).isString().isLength({ max: 1000 }).withMessage('Notes must be max 1000 characters')
 ], async (req, res) => {
   try {
     // Check admin permission
