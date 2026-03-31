@@ -40,7 +40,7 @@ export const ClientSummaryCard = ({ payload, formatCurrency }) => {
                   </AppText>
                 </Box>
                 <AppText variant="h2" sx={{ mb: 0.5 }}>
-                  {item.label !== "Active Clients"
+                  {item.label !== "Active Clients" && item.label !== "Total Invoices"
                     ? formatCurrency(item.overallStatsInfo.tp1)
                     : item.overallStatsInfo.tp1}
                 </AppText>

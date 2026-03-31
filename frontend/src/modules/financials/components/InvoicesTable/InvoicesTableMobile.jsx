@@ -109,7 +109,7 @@ export const InvoicesTableMobile = ({
             </Typography>
           ),
       },
-      {
+      ...(isAdmin ? [{
         field: "paymentLink",
         headerName: t("invoices.table.paymentLink"),
         labelWidth: 120,
@@ -120,7 +120,7 @@ export const InvoicesTableMobile = ({
             onError={onPaymentLinkError}
           />
         ),
-      },
+      }] : []),
     ],
     [t, formatDate, formatCurrency, getStatusColor, isAdmin, onPaymentLinkSuccess, onPaymentLinkError]
   );

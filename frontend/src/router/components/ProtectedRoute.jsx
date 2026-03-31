@@ -31,7 +31,7 @@ export const ProtectedRoute = ({
   }
 
   // Verificar si requiere ser super admin (por permiso, no por nombre de cliente)
-  if (requireSuperAdmin && !permissions.includes("admin_clients")) {
+  if (requireSuperAdmin && !hasPermission("admin_clients")) {
     return <Navigate to="/unauthorized" replace />;
   }
 

@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { ClientFolders } from "./components/ClientFolders";
 import {
   useGetClientFoldersQuery,
+  useGetAccessibleFoldersQuery,
   useLazyGetClientReportsQuery,
   useUploadReportMutation,
   useLazyDownloadReportQuery,
@@ -29,15 +30,26 @@ import { logger } from "../../common/utils/logger";
 export const ReportsManagementView = () => {
   const { t } = useTranslation();
   const authUser = useSelector((state) => state.auth.user);
+  const isAdmin = authUser?.permissions?.includes("admin_clients");
   const [createLog] = useCreateLogMutation();
   const { notificationRef, showNotification } = useNotification();
 
-  // RTK Query hooks
+  // RTK Query hooks - Admin sees all folders, Client sees only assigned folders
   const {
-    data: clientFolders = [],
-    isLoading: loading,
-    refetch: refetchFolders,
-  } = useGetClientFoldersQuery();
+    data: adminFolders = [],
+    isLoading: loadingAdmin,
+    refetch: refetchAdminFolders,
+  } = useGetClientFoldersQuery(undefined, { skip: !isAdmin });
+
+  const {
+    data: accessibleFolders = [],
+    isLoading: loadingAccessible,
+    refetch: refetchAccessibleFolders,
+  } = useGetAccessibleFoldersQuery(undefined, { skip: isAdmin });
+
+  const clientFolders = isAdmin ? adminFolders : accessibleFolders;
+  const loading = isAdmin ? loadingAdmin : loadingAccessible;
+  const refetchFolders = isAdmin ? refetchAdminFolders : refetchAccessibleFolders;
 
   // Use lazy query for reports - will be called when folders are expanded
   const [getReports, { data: reportsData, isLoading: loadingReports }] =

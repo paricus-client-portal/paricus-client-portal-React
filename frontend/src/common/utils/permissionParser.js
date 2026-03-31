@@ -42,7 +42,7 @@ export const permissionSections = {
   audioRetrieval: ["view_interactions", "admin_audio_recordings", "download_audio_files"],
   knowledgeBase: ["view_knowledge_base", "create_kb_articles", "edit_kb_articles"],
   tickets: ["view_tickets"],
-  financial: ["view_financials", "admin_invoices", "download_invoices", "pay_invoices", "view_invoices"],
+  financial: ["view_financials"],
   reportsManagement: ["admin_reports", "download_reports"],
   userManagement: ["admin_clients", "admin_users", "admin_roles"],
   broadcast: ["admin_broadcast", "broadcast_announcements", "broadcast_swiper", "broadcast_kpi"],
@@ -54,7 +54,6 @@ export const permissionSections = {
  */
 export const parentChildPermissions = {
   view_dashboard: ["admin_dashboard_config", "dashboard_announcements_inbox", "dashboard_master_repository", "dashboard_swiper", "dashboard_active_tasks"],
-  view_financials: ["admin_invoices", "download_invoices", "pay_invoices", "view_invoices"],
   admin_broadcast: ["broadcast_announcements", "broadcast_swiper", "broadcast_kpi"],
 };
 

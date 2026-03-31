@@ -15,6 +15,7 @@ router.get('/',
     try {
       // Check if user has admin permissions (from JWT)
       const isBPOAdmin = req.user.permissions?.includes('admin_clients');
+      log.error('DEBUG LOGS - userId:', req.user.id, 'permissions:', req.user.permissions, 'isBPOAdmin:', isBPOAdmin);
 
       if (!isBPOAdmin) {
         return res.status(403).json({

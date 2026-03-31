@@ -20,6 +20,7 @@ export const useClientsTableConfig = ({
   permanentDeleteClient,
   activateClient,
   showNotification,
+  isBPOAdmin = false,
   // Desktop-specific filter state (managed internally if not provided)
   externalFilters,
   setExternalFilters,
@@ -195,6 +196,7 @@ export const useClientsTableConfig = ({
             item={row.original}
             itemName={row.name}
             itemType="client"
+            disabled={!isBPOAdmin}
           />
         </>
       );

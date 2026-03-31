@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "node -e \"console.log('\\n🔐 Development Credentials:\\n\\n🔧 BPO Admin: admin@paricus.com / admin123!\\n\\n📱 Flex Mobile:\\n   Admin: admin@flexmobile.com / flex123!\\n   User:  user@flexmobile.com / flexuser123!\\n\\n📞 IM Telecom:\\n   Admin: admin@imtelecom.com / imtelecom123!\\n   User:  user@imtelecom.com / imuser123!\\n\\n🌎 North American Local:\\n   Admin: admin@northamericanlocal.com / northam123!\\n   User:  user@northamericanlocal.com / naluser123!\\n')\" && vite",
+    "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"

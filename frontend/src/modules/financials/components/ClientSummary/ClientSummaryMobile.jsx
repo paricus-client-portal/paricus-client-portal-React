@@ -66,7 +66,7 @@ const SummaryCardMobile = ({ item, formatCurrency }) => {
             whiteSpace: "nowrap",
           }}
         >
-          {item.label !== "Active Clients"
+          {item.label !== "Active Clients" && item.label !== "Total Invoices"
             ? formatCurrency(item.overallStatsInfo.tp1)
             : item.overallStatsInfo.tp1}
         </AppText>

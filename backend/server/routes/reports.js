@@ -44,7 +44,7 @@ router.use(authenticateToken);
 router.get('/client-folders', async (req, res) => {
   try {
     // Check admin permission
-    if (!req.user.permissions?.includes('admin_reports')) {
+    if (!req.user.permissions?.includes('admin_clients')) {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
@@ -79,7 +79,7 @@ router.get('/client/:clientFolder', [
     const { clientFolder } = req.params;
 
     // Check permissions: Admin can see all, clients need view_reporting permission and can only see their assigned folders
-    if (!req.user.permissions?.includes('admin_reports')) {
+    if (!req.user.permissions?.includes('admin_clients')) {
       // Check if user has permission to view reports
       if (!req.user.permissions?.includes('view_reporting')) {
         return res.status(403).json({ error: 'Permission denied. You need view_reporting permission to access reports.' });
@@ -135,7 +135,7 @@ router.post('/upload/:clientFolder', [
   body('description').optional().isString().isLength({ max: 500 })
 ], upload.single('file'), async (req, res) => {
   try {
-    // Check admin permission
+    // Check admin permission (upload requires admin_reports)
     if (!req.user.permissions?.includes('admin_reports')) {
       return res.status(403).json({ error: 'Admin access required' });
     }
@@ -243,7 +243,7 @@ router.get('/download/:clientFolder/:fileName', [
     const { clientFolder, fileName } = req.params;
 
     // Check permissions (same logic as listing reports)
-    if (!req.user.permissions?.includes('admin_reports')) {
+    if (!req.user.permissions?.includes('admin_clients')) {
       // Check if user has permission to view reports
       if (!req.user.permissions?.includes('view_reporting')) {
         return res.status(403).json({ error: 'Permission denied. You need view_reporting permission to download reports.' });
@@ -304,7 +304,7 @@ router.delete('/:clientFolder/:fileName', [
   param('fileName').isString().withMessage('File name is required')
 ], async (req, res) => {
   try {
-    // Check admin permission
+    // Check admin permission (delete requires admin_reports)
     if (!req.user.permissions?.includes('admin_reports')) {
       return res.status(403).json({ error: 'Admin access required' });
     }

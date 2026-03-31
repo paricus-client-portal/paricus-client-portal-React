@@ -4,6 +4,7 @@ import {
   Add as AddIcon,
 } from "@mui/icons-material";
 import { useTranslation } from "react-i18next";
+import { useSelector } from "react-redux";
 import { useBreakpoint } from "../../../../common/hooks/useBreakpoint";
 import { useNotification } from "../../../../common/hooks";
 import { MobileFilterPanel } from "../../../../common/components/ui/MobileFilterPanel";
@@ -31,6 +32,8 @@ export const ClientsTab = () => {
   const { t } = useTranslation();
   const { isMobile } = useBreakpoint();
   const { notificationRef, showNotification } = useNotification();
+  const authUser = useSelector((state) => state.auth.user);
+  const isBPOAdmin = authUser?.permissions?.includes("admin_clients");
 
   // RTK Query hooks
   const { data: allClients = [], isLoading, error } = useGetClientsQuery();
@@ -111,6 +114,7 @@ export const ClientsTab = () => {
     permanentDeleteClient,
     activateClient: updateClient,
     showNotification,
+    isBPOAdmin,
   });
 
   // Mobile filter config

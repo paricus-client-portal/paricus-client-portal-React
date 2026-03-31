@@ -112,7 +112,7 @@ export const menuItemsAdmin = [
         label: "logs",
         icon: <AppRegistrationIcon fontSize="medium" />,
         route: "users-management/logs",
-        permission: "admin_users",
+        permission: "admin_clients",
       },
     ],
   },

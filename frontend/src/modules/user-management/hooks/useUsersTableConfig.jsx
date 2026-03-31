@@ -23,6 +23,8 @@ export const useUsersTableConfig = ({
   updateUserMutation,
   deleteUserMutation,
   showNotification,
+  // Auth
+  currentUserId = null,
   // Desktop-specific props (optional)
   isBPOAdmin = false,
   selectedClient = "",
@@ -99,49 +101,54 @@ export const useUsersTableConfig = ({
   );
 
   const renderActions = useCallback(
-    (row) => (
-      <>
-        <EditButton
-          handleClick={openEditDialog}
-          item={row.original}
-          title={t("users.actions.editUser")}
-        />
-        <DeactivateButton
-          handleDeactivate={(user) =>
-            updateUserMutation({
-              id: user.id,
-              isActive: !row.is_active,
-            }).unwrap()
-          }
-          item={row.original}
-          itemName={row.name}
-          itemType="user"
-          isActive={row.is_active}
-          title={row.is_active ? t("users.actions.deactivateUser") : t("users.actions.activateUser")}
-          onSuccess={() =>
-            showNotification(
-              row.is_active
-                ? t("users.messages.userDeactivated")
-                : t("users.messages.userActivated"),
-              "success"
-            )
-          }
-          onError={(error) =>
-            showNotification(
-              error?.data?.message || t("users.messages.statusUpdateFailed"),
-              "error"
-            )
-          }
-        />
-        <DeleteButton
-          handleDelete={(user) => deleteUserMutation(user.id).unwrap()}
-          item={row.original}
-          itemName={row.name}
-          itemType="user"
-        />
-      </>
-    ),
-    [openEditDialog, updateUserMutation, deleteUserMutation, showNotification, t]
+    (row) => {
+      const isSelf = currentUserId && row.original.id === currentUserId;
+      return (
+        <>
+          <EditButton
+            handleClick={openEditDialog}
+            item={row.original}
+            title={t("users.actions.editUser")}
+          />
+          <DeactivateButton
+            handleDeactivate={(user) =>
+              updateUserMutation({
+                id: user.id,
+                isActive: !row.is_active,
+              }).unwrap()
+            }
+            item={row.original}
+            itemName={row.name}
+            itemType="user"
+            isActive={row.is_active}
+            disabled={isSelf}
+            title={isSelf ? t("users.actions.cannotDeactivateSelf") : row.is_active ? t("users.actions.deactivateUser") : t("users.actions.activateUser")}
+            onSuccess={() =>
+              showNotification(
+                row.is_active
+                  ? t("users.messages.userDeactivated")
+                  : t("users.messages.userActivated"),
+                "success"
+              )
+            }
+            onError={(error) =>
+              showNotification(
+                error?.data?.message || t("users.messages.statusUpdateFailed"),
+                "error"
+              )
+            }
+          />
+          <DeleteButton
+            handleDelete={(user) => deleteUserMutation(user.id).unwrap()}
+            item={row.original}
+            itemName={row.name}
+            itemType="user"
+            disabled={!isBPOAdmin || isSelf}
+          />
+        </>
+      );
+    },
+    [openEditDialog, updateUserMutation, deleteUserMutation, showNotification, t, isBPOAdmin, currentUserId]
   );
 
   // Desktop columns (DataGrid format)

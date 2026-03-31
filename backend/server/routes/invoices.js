@@ -745,22 +745,24 @@ router.get('/stats', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     // Check permissions
-    const hasAdminAccess = req.user.permissions?.includes('admin_invoices');
-    const hasViewAccess = req.user.permissions?.includes('view_invoices');
+    const hasAccess = req.user.permissions?.includes('admin_invoices') ||
+      req.user.permissions?.includes('view_invoices') ||
+      req.user.permissions?.includes('view_financials');
 
-    if (!hasAdminAccess && !hasViewAccess) {
+    if (!hasAccess) {
       return res.status(403).json({ error: 'Permission denied' });
     }
 
-    if (hasAdminAccess) {
-      // Admin: redirect to use client-folders endpoint
+    // BPO Admin without clientId: redirect to client-folders endpoint
+    const isBPOAdmin = req.user.permissions?.includes('admin_clients');
+    if (isBPOAdmin) {
       return res.json({
         success: true,
         message: 'Use /api/invoices/client-folders to list all client folders',
         invoices: []
       });
     } else {
-      // Client: get their assigned folder and return invoices
+      // Client user: get their assigned folder and return invoices
       const folderAccess = await prisma.clientFolderAccess.findFirst({
         where: {
           clientId: req.user.clientId
@@ -817,42 +819,33 @@ router.get('/', async (req, res) => {
       // Generate download URLs for each invoice
       const invoicesWithUrls = await Promise.all(
         invoices.map(async (invoice) => {
-          try {
-            const downloadUrl = await generateDownloadUrl(invoice.s3Key);
-            return {
-              id: invoice.id,
-              invoiceNumber: invoice.invoiceNumber,
-              title: invoice.title,
-              description: invoice.description,
-              amount: invoice.amount,
-              currency: invoice.currency,
-              status: invoice.status,
-              dueDate: invoice.dueDate,
-              issuedDate: invoice.issuedDate,
-              paidDate: invoice.paidDate,
-              fileName: invoice.s3Key.split('/').pop(),
-              size: invoice.fileSize,
-              lastModified: invoice.updatedAt,
-              folder: folderAccess.folderName,
-              key: invoice.s3Key,
-              paymentLink: invoice.paymentLink,
-              downloadUrl
-            };
-          } catch (error) {
-            log.error(`Error generating URL for ${invoice.s3Key}:`, error);
-            return {
-              id: invoice.id,
-              invoiceNumber: invoice.invoiceNumber,
-              title: invoice.title,
-              fileName: invoice.s3Key.split('/').pop(),
-              size: invoice.fileSize,
-              lastModified: invoice.updatedAt,
-              folder: folderAccess.folderName,
-              key: invoice.s3Key,
-              paymentLink: invoice.paymentLink,
-              downloadUrl: null
-            };
+          let downloadUrl = null;
+          if (invoice.s3Key) {
+            try {
+              downloadUrl = await generateDownloadUrl(invoice.s3Key);
+            } catch (error) {
+              log.error(`Error generating URL for ${invoice.s3Key}:`, error);
+            }
           }
+          return {
+            id: invoice.id,
+            invoiceNumber: invoice.invoiceNumber,
+            title: invoice.title,
+            description: invoice.description,
+            amount: invoice.amount,
+            currency: invoice.currency,
+            status: invoice.status,
+            dueDate: invoice.dueDate,
+            issuedDate: invoice.issuedDate,
+            paidDate: invoice.paidDate,
+            fileName: invoice.s3Key ? invoice.s3Key.split('/').pop() : null,
+            size: invoice.fileSize,
+            lastModified: invoice.updatedAt,
+            folder: folderAccess.folderName,
+            key: invoice.s3Key,
+            paymentLink: invoice.paymentLink,
+            downloadUrl
+          };
         })
       );
 

@@ -35,10 +35,10 @@ export const useFinancials = () => {
   const authUser = useSelector((state) => state.auth.user);
 
   // Computed values for permissions
-  const isBPOAdmin = authUser?.permissions?.includes("admin_invoices");
-  const isClientAdmin =
-    authUser?.permissions?.includes("view_invoices") && !isBPOAdmin;
-  const hasViewAccess = authUser?.permissions?.includes("view_invoices");
+  const isBPOAdmin = authUser?.permissions?.includes("admin_clients");
+  const hasInvoiceAccess = authUser?.permissions?.includes("view_invoices") || authUser?.permissions?.includes("admin_invoices") || authUser?.permissions?.includes("view_financials");
+  const isClientAdmin = hasInvoiceAccess && !isBPOAdmin;
+  const hasViewAccess = hasInvoiceAccess;
 
   // Local state for selected folder
   const [selectedFolder, setSelectedFolder] = useState("");

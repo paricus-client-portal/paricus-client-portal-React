@@ -203,6 +203,7 @@ export const UsersTab = () => {
     updateUserMutation,
     deleteUserMutation,
     showNotification,
+    currentUserId: authUser?.id,
     isBPOAdmin,
     selectedClient,
     setSelectedClient,
