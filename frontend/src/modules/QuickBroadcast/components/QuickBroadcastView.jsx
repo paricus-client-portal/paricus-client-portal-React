@@ -344,7 +344,7 @@ export const QuickBroadcastView = () => {
                                 "selected"
                               }`}
                               size="small"
-                              sx={quickBroadcastCard.qcompactSelector.chip}
+                              sx={quickBroadcastCard.compactSelector.chip}
                             />
                           ) : null}
                         </Box>

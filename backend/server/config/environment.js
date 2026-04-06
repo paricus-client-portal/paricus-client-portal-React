@@ -81,6 +81,8 @@ function validateConfig() {
     errors.push('AWS_REGION no está configurado y STORAGE_MODE es "s3"');
   }
 
+  // Note: AWS_ACCESS_KEY_ID is not required when using IAM Roles (e.g., EC2 instance roles)
+
   if (errors.length > 0) {
     log.error('❌ ERRORES DE CONFIGURACIÓN:');
     errors.forEach((error) => log.error(`   - ${error}`));

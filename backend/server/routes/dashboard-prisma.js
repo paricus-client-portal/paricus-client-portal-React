@@ -8,6 +8,8 @@ import { authenticateToken, requirePermission } from '../middleware/auth-prisma.
 import { prisma } from '../database/prisma.js';
 import { logAnnouncementCreate, logAnnouncementDelete } from '../services/logger.js';
 import log from '../utils/console-logger.js';
+import { getKpiPool } from '../services/mssql.js';
+import { getKpiModule } from '../services/kpi-queries/index.js';
 
 const router = express.Router();
 
@@ -1000,5 +1002,50 @@ router.delete(
     }
   }
 );
+
+/**
+ * GET /api/dashboard/kpis
+ * Fetch client-specific KPIs from MSSQL
+ * Returns KPIs based on the client's configured SQL queries
+ */
+router.get('/kpis', authenticateToken, async (req, res) => {
+  try {
+    const isBPOAdmin = req.user.permissions?.includes('admin_clients');
+    let targetClientId = req.user.clientId;
+
+    if (isBPOAdmin && req.query.clientId) {
+      targetClientId = parseInt(req.query.clientId);
+    }
+
+    // Get client name from database
+    const client = await prisma.client.findUnique({
+      where: { id: targetClientId },
+      select: { name: true },
+    });
+
+    if (!client) {
+      return res.json({ success: true, kpis: [], clientName: null });
+    }
+
+    // Check if this client has KPI queries configured
+    const kpiModule = getKpiModule(client.name);
+    if (!kpiModule) {
+      return res.json({ success: true, kpis: [], clientName: client.name });
+    }
+
+    // Get MSSQL KPI pool (paricus_dw_prod)
+    const pool = await getKpiPool();
+    if (!pool) {
+      return res.status(503).json({ error: 'MSSQL connection not available' });
+    }
+
+    const kpis = await kpiModule.fetchKpis(pool);
+
+    res.json({ success: true, kpis, clientName: client.name });
+  } catch (error) {
+    log.error('Error fetching client KPIs:', error);
+    res.status(500).json({ error: 'Failed to fetch KPIs' });
+  }
+});
 
 export default router;

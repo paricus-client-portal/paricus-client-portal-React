@@ -27,6 +27,22 @@ export const dashboardApi = createApi({
       invalidatesTags: ["DashboardStats"],
     }),
 
+    // Get client-specific KPIs from MSSQL
+    getClientKpis: builder.query({
+      query: (clientId) => ({
+        url: "/kpis",
+        params: clientId ? { clientId } : undefined,
+      }),
+      transformResponse: (response) => ({
+        kpis: response.kpis || [],
+        clientName: response.clientName || null,
+      }),
+      providesTags: (result, error, clientId) => [
+        { type: "DashboardStats", id: `kpis-${clientId || "OWN"}` },
+      ],
+      keepUnusedDataFor: 300,
+    }),
+
     // ========================================
     // ANNOUNCEMENTS ENDPOINTS
     // ========================================
@@ -84,6 +100,7 @@ export const dashboardApi = createApi({
 export const {
   useGetDashboardStatsQuery,
   useRefreshDashboardStatsMutation,
+  useGetClientKpisQuery,
   useGetAnnouncementsQuery,
   useGetAnnouncementQuery,
   useCreateAnnouncementMutation,

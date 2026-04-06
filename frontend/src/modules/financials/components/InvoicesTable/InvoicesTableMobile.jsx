@@ -74,13 +74,16 @@ export const InvoicesTableMobile = ({
         field: "status",
         headerName: t("invoices.table.status"),
         labelWidth: 120,
-        renderCell: ({ row }) => (
-          <Chip
-            label={(row.status || "pending").toUpperCase()}
-            color={getStatusColor(row.status || "pending")}
-            size="small"
-          />
-        ),
+        renderCell: ({ row }) => {
+          const displayStatus = !isAdmin && row.status?.toLowerCase() === "sent" ? "pending" : (row.status || "pending");
+          return (
+            <Chip
+              label={displayStatus.toUpperCase()}
+              color={getStatusColor(displayStatus)}
+              size="small"
+            />
+          );
+        },
       },
       {
         field: "issuedDate",
@@ -113,12 +116,18 @@ export const InvoicesTableMobile = ({
         field: "paymentLink",
         headerName: t("invoices.table.paymentLink"),
         labelWidth: 120,
-        renderCell: ({ row }) => (
+        renderCell: ({ row }) => isAdmin ? (
           <PendingLinkModal
             invoice={row}
             onSuccess={onPaymentLinkSuccess}
             onError={onPaymentLinkError}
           />
+        ) : (
+          row.paymentLink ? (
+            <Chip label={t("invoices.paymentLink.linkSet")} color="success" size="small" sx={colors.intranetgreen} />
+          ) : (
+            <Chip label={t("invoices.paymentLink.pendingLink")} size="small" sx={colors.intranetYellow} />
+          )
         ),
       },
     ],

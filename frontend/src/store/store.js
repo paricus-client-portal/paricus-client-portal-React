@@ -14,6 +14,7 @@ import { articlesSearchApi } from "./api/articlesSearchApi";
 import { ticketsApi } from "./api/ticketsApi";
 import { dashboardApi } from "./api/dashboardApi";
 import { carouselApi } from "./api/carouselApi";
+import { powerbiApi } from "./api/powerbiApi";
 
 // Middleware to clear RTK Query cache on logout
 const resetCacheMiddleware = (storeAPI) => (next) => (action) => {
@@ -36,6 +37,7 @@ const resetCacheMiddleware = (storeAPI) => (next) => (action) => {
       storeAPI.dispatch(ticketsApi.util.resetApiState());
       storeAPI.dispatch(dashboardApi.util.resetApiState());
       storeAPI.dispatch(carouselApi.util.resetApiState());
+      storeAPI.dispatch(powerbiApi.util.resetApiState());
     } catch (err) {
       logger.error("Error resetting API cache on logout:", err);
     }
@@ -60,6 +62,7 @@ export const store = configureStore({
     [ticketsApi.reducerPath]: ticketsApi.reducer,
     [dashboardApi.reducerPath]: dashboardApi.reducer,
     [carouselApi.reducerPath]: carouselApi.reducer,
+    [powerbiApi.reducerPath]: powerbiApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -75,6 +78,7 @@ export const store = configureStore({
       logsApi.middleware,
       ticketsApi.middleware,
       dashboardApi.middleware,
-      carouselApi.middleware
+      carouselApi.middleware,
+      powerbiApi.middleware
     ),
 });

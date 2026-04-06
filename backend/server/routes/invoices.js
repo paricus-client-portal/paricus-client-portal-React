@@ -230,7 +230,8 @@ router.post('/upload/:clientFolder',
       status,
       dueDate,
       issuedDate,
-      paymentMethod
+      paymentMethod,
+      paymentLink
     } = req.body;
 
     // Validate amount
@@ -301,6 +302,7 @@ router.post('/upload/:clientFolder',
         dueDate: parsedDueDate,
         issuedDate: parsedIssuedDate,
         paymentMethod: paymentMethod || null,
+        paymentLink: paymentLink || null,
         s3Key: s3Key,
         s3Bucket: s3Key ? getBucketName() : null,
         fileSize: fileSize,
@@ -319,14 +321,14 @@ router.post('/upload/:clientFolder',
 
     res.json({
       success: true,
-      message: 'Invoice uploaded successfully',
+      message: 'Invoice created successfully',
       invoice: {
         id: invoice.id,
         invoiceNumber: invoice.invoiceNumber,
-        fileName: fileName,
+        fileName: s3Key ? s3Key.split('/').pop() : null,
         s3Key: s3Key,
-        bucket: getBucketName(),
-        size: req.file.size,
+        bucket: s3Key ? getBucketName() : null,
+        size: fileSize,
         clientFolder: clientFolder
       }
     });

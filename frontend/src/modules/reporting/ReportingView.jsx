@@ -1,13 +1,17 @@
+import { useState } from "react";
 import {
   Box,
-  Button,
-  Card,
-  CardContent,
-  Grid,
   IconButton,
-  Paper,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Tab,
+  Tabs,
+  Tooltip,
   Typography,
 } from "@mui/material";
+import { useDispatch } from "react-redux";
 import { AlertInline } from "../../common/components/ui/AlertInline";
 import { useNotification } from "../../common/hooks";
 import { useTranslation } from "react-i18next";
@@ -15,21 +19,22 @@ import {
   Refresh as RefreshIcon,
   PictureAsPdf as PdfIcon,
   Download as DownloadIcon,
-  Error as ErrorIcon,
   Description as DescriptionIcon,
   Folder as FolderIcon,
+  FolderOpen as FolderOpenIcon,
+  Dashboard as DashboardIcon,
+  ChevronRight as ChevronRightIcon,
 } from "@mui/icons-material";
 import {
   useGetAccessibleFoldersQuery,
   useGetClientReportsQuery,
   useLazyDownloadReportQuery,
+  reportsApi,
 } from "../../store/api/reportsApi";
+import { useGetDashboardsQuery } from "../../store/api/powerbiApi";
 import {
-  primaryButton,
-  primaryIconButton,
-  outlinedIconButton,
-  typography,
   boxTypography,
+  colors,
 } from "../../common/styles/styles";
 import {
   slugToTitle,
@@ -39,128 +44,72 @@ import {
 import { LoadingProgress } from "../../common/components/ui/LoadingProgress";
 import { logger } from "../../common/utils/logger";
 import HeaderBoxTypography from "../../common/components/ui/HeaderBoxTypography/HeaderBoxTypography";
+import { PowerBIEmbed } from "../../common/components/ui/PowerBIEmbed";
 
-// Component to display a single folder's reports using RTK Query
-const FolderReportsSection = ({ folder, downloadReport }) => {
+// Compact folder reports list for sidebar
+const SidebarFolderReports = ({ folder, downloadReport }) => {
   const { t } = useTranslation();
-  const {
-    data: reports = [],
-    isLoading,
-    refetch,
-  } = useGetClientReportsQuery(folder);
-
-  const DATE_SHORT_OPTIONS = {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  };
+  const [open, setOpen] = useState(false);
+  const { data: reports = [], isLoading } = useGetClientReportsQuery(folder, { skip: !open });
+  const DATE_SHORT_OPTIONS = { year: "numeric", month: "short", day: "numeric" };
 
   return (
-    <Paper variant="outlined" sx={{ p: 2 }}>
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 2,
-        }}
+    <Box sx={{ mb: 0.5 }}>
+      <ListItem
+        onClick={() => setOpen(!open)}
+        sx={{ cursor: "pointer", borderRadius: 1, "&:hover": { bgcolor: colors.primaryLight }, py: 0.5 }}
       >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <FolderIcon color="primary" />
-          <Typography variant="h6" component="h3">
-            {slugToTitle(folder)}
-          </Typography>
-        </Box>
-        <Button
-          size="small"
-          variant="outlined"
-          startIcon={
-            isLoading ? <LoadingProgress size={16} /> : <RefreshIcon />
-          }
-          onClick={() => refetch()}
-          disabled={isLoading}
-          sx={outlinedIconButton}
-        >
-          {isLoading ? t("common.loading") : t("reporting.refreshReports")}
-        </Button>
-      </Box>
-
-      {/* Reports Grid */}
-      {reports.length > 0 ? (
-        <Grid container spacing={2}>
-          {reports.map((report) => (
-            <Grid item xs={12} sm={6} md={4} key={report.key}>
-              <Paper
-                variant="outlined"
-                sx={{
-                  p: 2,
-                  cursor: "pointer",
-                  "&:hover": {
-                    boxShadow: 2,
-                    bgcolor: "action.hover",
-                  },
-                  transition: "all 0.2s",
-                }}
-                onClick={() => downloadReport(report, folder)}
-              >
-                <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2 }}>
-                  <PdfIcon
-                    sx={{ fontSize: 32, color: "error.main", flexShrink: 0 }}
+        <ListItemIcon sx={{ minWidth: 28 }}>
+          {open
+            ? <FolderOpenIcon sx={{ color: "#16A34A", fontSize: 18 }} />
+            : <FolderIcon sx={{ color: "#16A34A", fontSize: 18 }} />}
+        </ListItemIcon>
+        <ListItemText
+          primary={slugToTitle(folder)}
+          primaryTypographyProps={{ variant: "body2", fontWeight: 600, fontSize: "0.8rem" }}
+        />
+        <ChevronRightIcon sx={{ fontSize: 16, color: "text.disabled", transform: open ? "rotate(90deg)" : "none", transition: "0.2s" }} />
+      </ListItem>
+      {open && (
+        <Box sx={{ pl: 1.5 }}>
+          {isLoading ? (
+            <Box sx={{ py: 1, textAlign: "center" }}><LoadingProgress size={14} /></Box>
+          ) : reports.length === 0 ? (
+            <Typography variant="caption" color="text.disabled" sx={{ pl: 2 }}>
+              {t("reporting.noReportsInFolder")}
+            </Typography>
+          ) : (
+            <List dense disablePadding>
+              {reports.map((report) => (
+                <ListItem
+                  key={report.key}
+                  onClick={() => downloadReport(report, folder)}
+                  sx={{ cursor: "pointer", borderRadius: 1, py: 0.25, "&:hover": { bgcolor: "action.hover" } }}
+                >
+                  <ListItemIcon sx={{ minWidth: 24 }}>
+                    <PdfIcon sx={{ fontSize: 16, color: "error.main" }} />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={report.name}
+                    secondary={`${formatFileSize(report.size)} - ${formatDate(report.lastModified, "en-US", DATE_SHORT_OPTIONS)}`}
+                    primaryTypographyProps={{ variant: "caption", fontWeight: 500, noWrap: true }}
+                    secondaryTypographyProps={{ variant: "caption", fontSize: "0.6rem" }}
                   />
-                  <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                    <Typography
-                      variant="body2"
-                      fontWeight={500}
-                      sx={{
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {report.name}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      display="block"
-                    >
-                      {formatFileSize(report.size)}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      color="text.disabled"
-                      display="block"
-                    >
-                      {formatDate(
-                        report.lastModified,
-                        "en-US",
-                        DATE_SHORT_OPTIONS,
-                      )}
-                    </Typography>
-                  </Box>
-                  <IconButton size="small" color="primary">
-                    <DownloadIcon fontSize="small" />
-                  </IconButton>
-                </Box>
-              </Paper>
-            </Grid>
-          ))}
-        </Grid>
-      ) : !isLoading ? (
-        <Box sx={{ textAlign: "center", py: 4 }}>
-          <Typography variant="body2" color="text.secondary">
-            {t("reporting.noReportsInFolder")}
-          </Typography>
+                  <DownloadIcon sx={{ fontSize: 14, color: "text.disabled" }} />
+                </ListItem>
+              ))}
+            </List>
+          )}
         </Box>
-      ) : null}
-    </Paper>
+      )}
+    </Box>
   );
 };
 
 export const ReportingView = () => {
   const { t } = useTranslation();
+  const dispatch = useDispatch();
 
-  // RTK Query hooks
   const {
     data: accessibleFolders = [],
     isLoading: loading,
@@ -168,156 +117,169 @@ export const ReportingView = () => {
     refetch,
   } = useGetAccessibleFoldersQuery();
 
+  const {
+    data: dashboards = [],
+    isLoading: loadingDashboards,
+  } = useGetDashboardsQuery();
+
+  const [activeTab, setActiveTab] = useState(0);
   const [getDownloadUrl] = useLazyDownloadReportQuery();
-
   const { notificationRef, showNotification } = useNotification();
-
-  // Derived error message
   const error = apiError?.data?.message || apiError?.error || "";
 
   const downloadReport = async (report, folder) => {
     try {
-      const fileName = report.name;
       showNotification(t("reporting.generatingLink"), "info");
-
-      const result = await getDownloadUrl({ folder, fileName }).unwrap();
-
+      const result = await getDownloadUrl({ folder, fileName: report.name }).unwrap();
       if (result.downloadUrl) {
         window.open(result.downloadUrl, "_blank");
         showNotification(t("reporting.downloadStarted"), "success");
-      } else {
-        throw new Error("No download URL received");
       }
     } catch (err) {
       logger.error("Error downloading report:", err);
-      showNotification(
-        err.data?.message || t("reporting.downloadFailed"),
-        "error",
-      );
+      showNotification(err.data?.message || t("reporting.downloadFailed"), "error");
     }
   };
 
+  const hasReports = accessibleFolders.length > 0;
+  const hasDashboards = dashboards.length > 0;
+
+  // PDF Reports sidebar panel
+  const reportsPanel = hasReports ? (
+    <Box sx={{
+      bgcolor: "white",
+      borderRadius: 2,
+      border: `1px solid ${colors.border}`,
+      p: 2,
+      height: "fit-content",
+      maxHeight: { md: "calc(100vh - 200px)" },
+      overflowY: "auto",
+      "&::-webkit-scrollbar": { width: 4 },
+      "&::-webkit-scrollbar-thumb": { bgcolor: colors.border, borderRadius: 2 },
+    }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1.5 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+          <DescriptionIcon sx={{ color: "#16A34A", fontSize: 18 }} />
+          <Typography variant="subtitle2" fontWeight={600}>
+            {t("reporting.clientTitle")}
+          </Typography>
+        </Box>
+        <Tooltip title={t("reporting.refreshReports")}>
+          <IconButton
+            size="small"
+            onClick={() => { refetch(); dispatch(reportsApi.util.invalidateTags(["Reports"])); }}
+            disabled={loading}
+          >
+            {loading ? <LoadingProgress size={14} /> : <RefreshIcon sx={{ fontSize: 16 }} />}
+          </IconButton>
+        </Tooltip>
+      </Box>
+      <List disablePadding>
+        {accessibleFolders.map((folder) => (
+          <SidebarFolderReports key={folder} folder={folder} downloadReport={downloadReport} />
+        ))}
+      </List>
+    </Box>
+  ) : null;
+
   return (
     <Box sx={boxTypography.box}>
-      {/* Page Header */}
       <HeaderBoxTypography text={t("reporting.title")} />
 
-      {/* Power BI Dashboard */}
-      <Card>
-        <CardContent sx={{ p: 3 }}>
-          <Typography variant="h6" component="h2" fontWeight={600} gutterBottom>
-            {t("reporting.title")}
-          </Typography>
-          <Box
-            sx={{
-              width: "100%",
-              overflow: "hidden",
-              borderRadius: 2,
-              border: "1px solid",
-              borderColor: "divider",
-            }}
-          >
-            <iframe
-              title="LinkLive - Operations Dashboard"
-              width="100%"
-              height="600"
-              src="https://app.powerbi.com/reportEmbed?reportId=ba4c808d-3d64-428e-94a0-ccc0be060f40&autoAuth=true&ctid=b850aa77-85c3-4720-80ca-97ae75dca583"
-              frameBorder="0"
-              allowFullScreen={true}
-              style={{ width: "100%" }}
-            />
-          </Box>
-        </CardContent>
-      </Card>
-
-      {/* PDF Reports Section */}
-      <Card sx={{ mt: 2 }}>
-        <CardContent sx={{ p: 3 }}>
-          <Box
-            sx={{
+      {loadingDashboards ? (
+        <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
+          <LoadingProgress size={32} />
+        </Box>
+      ) : hasDashboards ? (
+        <Box sx={{ display: "flex", gap: 2, flexDirection: { xs: "column", md: "row" } }}>
+          {/* Power BI main area */}
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            {/* Tab bar */}
+            <Box sx={{
               display: "flex",
-              justifyContent: "space-between",
               alignItems: "center",
-              mb: 3,
-            }}
-          >
-            <Typography variant="h6" component="h2" fontWeight={600}>
-              {t("reporting.clientTitle")}
-            </Typography>
-            <Button
-              variant="contained"
-              startIcon={
-                loading ? <LoadingProgress size={16} /> : <RefreshIcon />
-              }
-              onClick={() => refetch()}
-              disabled={loading}
-              sx={primaryIconButton}
-            >
-              {loading ? t("common.loading") : t("reporting.refreshReports")}
-            </Button>
+              borderBottom: 1,
+              borderColor: "divider",
+              bgcolor: "white",
+              borderRadius: "8px 8px 0 0",
+            }}>
+              <Tabs
+                value={activeTab}
+                onChange={(_, v) => setActiveTab(v)}
+                sx={{
+                  minHeight: 42,
+                  "& .MuiTab-root": { textTransform: "none", fontWeight: 600, minHeight: 42, py: 0 },
+                  "& .Mui-selected": { color: "#16A34A" },
+                  "& .MuiTabs-indicator": { backgroundColor: "#16A34A" },
+                }}
+              >
+                {dashboards.map((d) => (
+                  <Tab
+                    key={d.id}
+                    icon={<DashboardIcon sx={{ color: "#16A34A", fontSize: 18 }} />}
+                    iconPosition="start"
+                    label={d.name}
+                  />
+                ))}
+              </Tabs>
+            </Box>
+
+            {/* Embed */}
+            <Box sx={{ bgcolor: "white", borderRadius: "0 0 8px 8px", overflow: "hidden" }}>
+              <PowerBIEmbed
+                key={dashboards[activeTab]?.id}
+                groupId={dashboards[activeTab]?.groupId}
+                reportId={dashboards[activeTab]?.reportId}
+              />
+            </Box>
           </Box>
 
-          {/* Loading State */}
-          {loading && (
+          {/* Right sidebar - PDF reports (desktop: side, mobile: below) */}
+          {hasReports && (
+            <Box sx={{ width: { xs: "100%", md: 280 }, flexShrink: 0 }}>
+              {reportsPanel}
+            </Box>
+          )}
+        </Box>
+      ) : (
+        /* No dashboards - show reports as main content */
+        <Box>
+          {hasReports ? (
+            <Box sx={{
+              bgcolor: "white",
+              borderRadius: 2,
+              border: `1px solid ${colors.border}`,
+              p: 3,
+            }}>
+              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+                <Typography variant="h6" fontWeight={600}>
+                  {t("reporting.clientTitle")}
+                </Typography>
+                <Tooltip title={t("reporting.refreshReports")}>
+                  <IconButton
+                    onClick={() => { refetch(); dispatch(reportsApi.util.invalidateTags(["Reports"])); }}
+                    disabled={loading}
+                  >
+                    {loading ? <LoadingProgress size={18} /> : <RefreshIcon />}
+                  </IconButton>
+                </Tooltip>
+              </Box>
+              <List disablePadding>
+                {accessibleFolders.map((folder) => (
+                  <SidebarFolderReports key={folder} folder={folder} downloadReport={downloadReport} />
+                ))}
+              </List>
+            </Box>
+          ) : (
             <Box sx={{ textAlign: "center", py: 8 }}>
-              <LoadingProgress size={40} sx={{ mb: 2 }} />
-              <Typography color="text.secondary">
-                {t("reporting.loadingReports")}
-              </Typography>
+              <DescriptionIcon sx={{ fontSize: 48, color: "text.disabled", mb: 1 }} />
+              <Typography variant="body1" color="text.secondary">{t("reporting.noReports")}</Typography>
+              <Typography variant="body2" color="text.disabled">{t("reporting.noReportsMessage")}</Typography>
             </Box>
           )}
+        </Box>
+      )}
 
-          {/* Error State */}
-          {!loading && error && (
-            <Box sx={{ textAlign: "center", py: 8 }}>
-              <ErrorIcon sx={{ fontSize: 48, color: "error.main", mb: 2 }} />
-              <Typography variant="h6" gutterBottom>
-                {t("reporting.errorLoading")}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                {error}
-              </Typography>
-              <Button
-                variant="contained"
-                onClick={() => refetch()}
-                sx={primaryButton}
-              >
-                {t("common.tryAgain")}
-              </Button>
-            </Box>
-          )}
-
-          {/* Folders Section */}
-          {!loading && !error && accessibleFolders.length > 0 && (
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-              {accessibleFolders.map((folder) => (
-                <FolderReportsSection
-                  key={folder}
-                  folder={folder}
-                  downloadReport={downloadReport}
-                />
-              ))}
-            </Box>
-          )}
-
-          {/* No Reports State */}
-          {!loading && !error && accessibleFolders.length === 0 && (
-            <Box sx={{ textAlign: "center", py: 8 }}>
-              <DescriptionIcon
-                sx={{ fontSize: 48, color: "text.disabled", mb: 2 }}
-              />
-              <Typography variant="h6" gutterBottom>
-                {t("reporting.noReports")}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {t("reporting.noReportsMessage")}
-              </Typography>
-            </Box>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Snackbar for notifications */}
       <AlertInline ref={notificationRef} asSnackbar />
     </Box>
   );

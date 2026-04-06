@@ -20,6 +20,7 @@ import { HeaderBoxTypography } from "../../common/components/ui/HeaderBoxTypogra
 import { AlertInline } from "../../common/components/ui/AlertInline";
 import { extractApiError } from "../../common/utils/apiHelpers";
 import { useNotification } from "../../common/hooks";
+import { PowerBIManagement } from "./components/PowerBIManagement";
 import {
   formatDateTime as formatDateTimeUtil,
   formatFileSize as formatFileSizeUtil,
@@ -337,6 +338,11 @@ export const ReportsManagementView = () => {
     <Box sx={boxTypography.box}>
       {/* Page Header */}
       <HeaderBoxTypography text={t("reportsManagement.title")} />
+
+      {/* Power BI Dashboard Management */}
+      <Box sx={{ mb: 3 }}>
+        <PowerBIManagement showNotification={showNotification} />
+      </Box>
 
       {/* Client Folders Section with Expandable Reports */}
       <Box>

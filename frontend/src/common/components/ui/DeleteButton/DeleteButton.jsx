@@ -101,6 +101,7 @@ export const DeleteButton = ({
       // Mostrar snackbar de error
       const errorMsg =
         errorMessage ||
+        error?.data?.error ||
         error?.data?.message ||
         error?.message ||
         t("common.deleteError", {

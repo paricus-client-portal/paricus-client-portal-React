@@ -11,6 +11,7 @@ import {
   Stack,
   Button,
   Box,
+  Chip,
 } from "@mui/material";
 import {
   Payment as PaymentIcon,
@@ -50,6 +51,12 @@ export const InvoicesTableDesktop = ({
   getStatusColor,
 }) => {
   const { t } = useTranslation();
+
+  // For clients, "sent" displays as "pending" (visual only)
+  const getDisplayStatus = (status) => {
+    if (!isAdmin && status?.toLowerCase() === "sent") return "pending";
+    return status;
+  };
 
   // Función para obtener el estilo del badge según el status
   const getStatusBadgeStyle = (status) => {
@@ -170,10 +177,10 @@ export const InvoicesTableDesktop = ({
                 <Box
                   component="span"
                   sx={{
-                    ...getStatusBadgeStyle(invoice.status || "pending"),
+                    ...getStatusBadgeStyle(getDisplayStatus(invoice.status) || "pending"),
                   }}
                 >
-                  {(invoice.status || "pending").toUpperCase()}
+                  {(getDisplayStatus(invoice.status) || "pending").toUpperCase()}
                 </Box>
               </TableCell>
               <TableCell sx={table.cell}>
@@ -211,11 +218,19 @@ export const InvoicesTableDesktop = ({
                 )}
               </TableCell>
               <TableCell sx={table.cell}>
-                <PendingLinkModal
-                  invoice={invoice}
-                  onSuccess={onPaymentLinkSuccess}
-                  onError={onPaymentLinkError}
-                />
+                {isAdmin ? (
+                  <PendingLinkModal
+                    invoice={invoice}
+                    onSuccess={onPaymentLinkSuccess}
+                    onError={onPaymentLinkError}
+                  />
+                ) : (
+                  invoice.paymentLink ? (
+                    <Chip label={t("invoices.paymentLink.linkSet")} color="success" size="small" sx={colors.intranetgreen} />
+                  ) : (
+                    <Chip label={t("invoices.paymentLink.pendingLink")} size="small" sx={colors.intranetYellow} />
+                  )
+                )}
               </TableCell>
 
               <TableCell sx={{ ...table.cell, textAlign: "right" }}>

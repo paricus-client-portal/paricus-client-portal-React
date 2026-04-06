@@ -1,21 +1,60 @@
 import PropTypes from "prop-types";
 import { Box, Chip, Card, CardContent, Typography } from "@mui/material";
 import {
-  Phone,
-  PhoneCallback,
+  AttachMoney,
+  Percent,
+  Autorenew,
+  PhonelinkErase,
   TrendingUp,
-  CheckCircle,
+  TrendingDown,
 } from "@mui/icons-material";
 import { useTranslation } from "react-i18next";
+import { useOutletContext } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { dashboardStyles, colors } from "../../../../common/styles/styles";
-import { isTargetAchieved } from "../../../../store/kpi/kpiSlice";
+import { useGetClientKpisQuery } from "../../../../store/api/dashboardApi";
+import { LoadingProgress } from "../../../../common/components/ui/LoadingProgress";
+
+const KPI_ICONS = {
+  total_claim_amount: <AttachMoney />,
+  eligible_pct: <Percent />,
+  recertification_rate: <Autorenew />,
+  non_usage_rate: <PhonelinkErase />,
+};
+
+const KPI_I18N_KEYS = {
+  total_claim_amount: "dashboard.kpis.totalClaimAmount",
+  eligible_pct: "dashboard.kpis.eligiblePct",
+  recertification_rate: "dashboard.kpis.recertificationRate",
+  non_usage_rate: "dashboard.kpis.nonUsageRate",
+};
+
+const formatValue = (value, format) => {
+  if (format === "currency") {
+    return `$${Number(value).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+  if (format === "percent") {
+    return `${Number(value).toFixed(1)}%`;
+  }
+  if (format === "number") {
+    return Number(value).toLocaleString();
+  }
+  return String(value);
+};
+
+const formatChange = (change, format) => {
+  const num = Number(change);
+  const sign = num > 0 ? "+" : "";
+  if (format === "percent") return `${sign}${num.toFixed(2)}%`;
+  if (format === "pp") return `${sign}${num.toFixed(1)}%`;
+  return `${sign}${num}`;
+};
 
 /**
- * StatCard - Desktop version with full details
+ * StatCard - Displays a single KPI metric with change indicator
  */
-const StatCard = ({ icon, value, label, badge, achieved, viewReportsText }) => {
-  const badgeColor = achieved
+const StatCard = ({ icon, value, label, badge, positive, badgeTooltip }) => {
+  const badgeColor = positive
     ? { backgroundColor: colors.primaryLight, color: colors.primary }
     : {
         backgroundColor: colors.priorityStyles.high.backgroundColor,
@@ -39,7 +78,6 @@ const StatCard = ({ icon, value, label, badge, achieved, viewReportsText }) => {
             justifyContent: "space-between",
           }}
         >
-          {/* Icon Container */}
           <Box
             sx={{
               ...dashboardStyles.dashboardIconContainer,
@@ -48,13 +86,13 @@ const StatCard = ({ icon, value, label, badge, achieved, viewReportsText }) => {
           >
             {icon}
           </Box>
+          {/* Mobile value */}
           <Box
             sx={{
               display: { xs: "flex", md: "none" },
               flexDirection: "column",
             }}
           >
-            {/* Value */}
             <Typography
               variant="h4"
               fontWeight="bold"
@@ -66,18 +104,22 @@ const StatCard = ({ icon, value, label, badge, achieved, viewReportsText }) => {
             >
               {value}
             </Typography>
-
-            {/* Label with micro-typography */}
             <Typography sx={{ ...dashboardStyles.dashboardMicroLabel, mb: 2 }}>
               {label}
             </Typography>
           </Box>
-          {/* Badge */}
           {badge && (
-            <Box sx={{ mt: 1 }}>
+            <Box sx={{ mt: 1, display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
               <Chip
                 label={badge}
                 size="small"
+                icon={
+                  positive ? (
+                    <TrendingUp sx={{ fontSize: "0.9rem" }} />
+                  ) : (
+                    <TrendingDown sx={{ fontSize: "0.9rem" }} />
+                  )
+                }
                 sx={{
                   fontSize: { xs: "0.5rem", md: "0.8rem" },
                   fontWeight: "bold",
@@ -85,16 +127,21 @@ const StatCard = ({ icon, value, label, badge, achieved, viewReportsText }) => {
                   ...badgeColor,
                 }}
               />
+              {badgeTooltip && (
+                <Typography variant="caption" color="text.disabled" sx={{ mt: 0.5, fontSize: "0.65rem", textAlign: "right" }}>
+                  {badgeTooltip}
+                </Typography>
+              )}
             </Box>
           )}
         </Box>
+        {/* Desktop value */}
         <Box
           sx={{
             display: { xs: "none", md: "flex" },
             flexDirection: "column",
           }}
         >
-          {/* Value */}
           <Typography
             variant="h4"
             fontWeight="bold"
@@ -106,36 +153,10 @@ const StatCard = ({ icon, value, label, badge, achieved, viewReportsText }) => {
           >
             {value}
           </Typography>
-
-          {/* Label with micro-typography */}
           <Typography sx={{ ...dashboardStyles.dashboardMicroLabel, mb: 2 }}>
             {label}
           </Typography>
         </Box>
-        {/* View Reports Link */}
-        {viewReportsText && (
-          <Box sx={{ mt: "auto" }}>
-            <Typography
-              variant="caption"
-              sx={{
-                color: colors.primary,
-                textTransform: "uppercase",
-                fontWeight: "600",
-                letterSpacing: "0.05em",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: 0.5,
-                "&:hover": {
-                  textDecoration: "underline",
-                },
-              }}
-            >
-              {viewReportsText}
-              <TrendingUp sx={{ fontSize: "0.875rem" }} />
-            </Typography>
-          </Box>
-        )}
       </CardContent>
     </Card>
   );
@@ -146,74 +167,86 @@ StatCard.propTypes = {
   value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
   label: PropTypes.string.isRequired,
   badge: PropTypes.string,
-  achieved: PropTypes.bool,
-  viewReportsText: PropTypes.string,
+  positive: PropTypes.bool,
+  badgeTooltip: PropTypes.string,
 };
 
 export const DashboardStatisticsView = () => {
   const { t } = useTranslation();
-  const kpi = useSelector((state) => state.kpi);
+  const { selectedClientId = null } = useOutletContext() || {};
+  const user = useSelector((state) => state.auth?.user);
+  const permissions = useSelector((state) => state.auth?.permissions);
+  const isBPOAdmin = permissions?.includes("admin_clients") ?? false;
 
-  const cardsData = [
-    {
-      icon: <Phone />,
-      value: Number(kpi.callsOffered.value).toLocaleString(),
-      label: t("dashboard.statistics.callsOffered"),
-      badge: kpi.callsOffered.change,
-      achieved: isTargetAchieved(
-        kpi.callsOffered.value,
-        kpi.callsOffered.target,
-      ),
-    },
-    {
-      icon: <PhoneCallback />,
-      value: Number(kpi.callsAnswered.value).toLocaleString(),
-      label: t("dashboard.statistics.callsAnswered"),
-      badge: kpi.callsAnswered.change,
-      achieved: isTargetAchieved(
-        kpi.callsAnswered.value,
-        kpi.callsAnswered.target,
-      ),
-    },
-    {
-      icon: <TrendingUp />,
-      value: `${kpi.answerRate.value}%`,
-      label: t("dashboard.statistics.answerRate"),
-      badge: kpi.answerRate.change,
-      achieved: isTargetAchieved(kpi.answerRate.value, kpi.answerRate.target),
-    },
-    {
-      icon: <CheckCircle />,
-      value: `${kpi.slaCompliance.value}%`,
-      label: t("dashboard.statistics.slaCompliance"),
-      badge: kpi.slaCompliance.change,
-      achieved: isTargetAchieved(
-        kpi.slaCompliance.value,
-        kpi.slaCompliance.target,
-      ),
-    },
-  ];
+  // BPO Admin without a selected client: don't show KPIs
+  const skipQuery = isBPOAdmin && !selectedClientId;
+  const queryClientId = isBPOAdmin ? selectedClientId : undefined;
+
+  const {
+    data: kpiData,
+    isLoading,
+    error,
+  } = useGetClientKpisQuery(queryClientId, { skip: skipQuery });
+
+  const kpis = kpiData?.kpis || [];
+
+  if (skipQuery || kpis.length === 0) {
+    return null;
+  }
+
+  if (isLoading) {
+    return (
+      <Box sx={{ textAlign: "center", py: 4 }}>
+        <LoadingProgress size={32} />
+      </Box>
+    );
+  }
+
+  if (kpis.length === 0) {
+    return (
+      <Box sx={{ textAlign: "center", py: 4 }}>
+        <Typography variant="body2" color="text.secondary">
+          {t("dashboard.statistics.noKpis")}
+        </Typography>
+      </Box>
+    );
+  }
+
+  const getComparisonTooltip = (kpi) => {
+    const meta = kpi.meta || {};
+    if (meta.prevName) return `${t("dashboard.kpis.vsTooltip")} ${meta.prevName}`;
+    if (meta.prevMonth) return `${t("dashboard.kpis.vsTooltip")} ${meta.prevMonth}`;
+    return "";
+  };
 
   return (
-    <Box
-      sx={{
-        display: "grid",
-        gridTemplateColumns: { xs: "1fr", md: "repeat(4, 1fr)" },
-        gap: 3,
-        mb: 3,
-      }}
-    >
-      {cardsData.map((card, index) => (
-        <StatCard
-          key={index}
-          icon={card.icon}
-          value={card.value}
-          label={card.label}
-          badge={card.badge}
-          achieved={card.achieved}
-          viewReportsText={t("dashboard.statistics.viewReports")}
-        />
-      ))}
+    <Box sx={{ mb: 3 }}>
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: {
+            xs: "1fr",
+            md: `repeat(${Math.min(kpis.length, 4)}, 1fr)`,
+          },
+          gap: 3,
+          mb: 1,
+        }}
+      >
+        {kpis.map((kpi) => (
+          <StatCard
+            key={kpi.id}
+            icon={KPI_ICONS[kpi.id] || <TrendingUp />}
+            value={formatValue(kpi.value, kpi.format)}
+            label={KPI_I18N_KEYS[kpi.id] ? t(KPI_I18N_KEYS[kpi.id]) : kpi.label}
+            badge={formatChange(kpi.change, kpi.changeFormat)}
+            positive={Number(kpi.change) >= 0}
+            badgeTooltip={getComparisonTooltip(kpi)}
+          />
+        ))}
+      </Box>
+      <Typography variant="caption" color="text.disabled" sx={{ display: "block", textAlign: "right" }}>
+        {t("dashboard.kpis.lastUpdated")}: {new Date().toLocaleDateString()}
+      </Typography>
     </Box>
   );
 };

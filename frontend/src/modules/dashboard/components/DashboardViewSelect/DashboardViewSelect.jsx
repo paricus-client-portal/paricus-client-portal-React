@@ -4,6 +4,7 @@ import { AlertInline } from "../../../../common/components/ui/AlertInline";
 import { useSelector } from "react-redux";
 import { useTranslation } from "react-i18next";
 import { useGetDashboardStatsQuery } from "../../../../store/api/dashboardApi";
+import { useGetUsersQuery, useGetRolePermissionNamesQuery } from "../../../../store/api/adminApi";
 import { AnnouncementsInbox } from "../AnnouncementsInbox";
 import { DashboardStatisticsView } from "../DashboardStatisticsView/DashboardStatisticsView";
 import { ActiveTasks } from "../ActiveTasks";
@@ -37,12 +38,23 @@ export const DashboardViewSelect = () => {
   const user = useSelector((state) => state.auth?.user);
   const isBPOAdmin = permissions?.includes("admin_clients") ?? false;
 
-  // Granular dashboard permissions
-  const canViewDashboard = permissions?.includes("view_dashboard") ?? true;
-  const canViewAnnouncements = permissions?.includes("dashboard_announcements_inbox") ?? true;
-  const canViewSwiper = permissions?.includes("dashboard_swiper") ?? true;
-  const canViewActiveTasks = permissions?.includes("dashboard_active_tasks") ?? true;
-  const canViewMasterRepo = permissions?.includes("dashboard_master_repository") ?? true;
+  // When BPO Admin uses "View As", fetch the selected user's role permissions
+  const { data: allUsers = [] } = useGetUsersQuery(undefined, { skip: !isBPOAdmin || !selectedUserId });
+  const selectedUser = selectedUserId ? allUsers.find((u) => u.id === selectedUserId) : null;
+  const selectedRoleId = selectedUser?.roleId || selectedUser?.role?.id;
+  const { data: viewAsPermissions } = useGetRolePermissionNamesQuery(selectedRoleId, { skip: !selectedRoleId });
+
+  // Use viewed user's permissions when "View As" is active, otherwise own permissions
+  const effectivePermissions = (isBPOAdmin && viewAsPermissions) ? viewAsPermissions : permissions;
+
+  // Granular dashboard permissions (must also have the parent module permission)
+  const canViewDashboard = effectivePermissions?.includes("view_dashboard") ?? true;
+  const canViewAnnouncements = effectivePermissions?.includes("dashboard_announcements_inbox") ?? true;
+  const canViewSwiper = effectivePermissions?.includes("dashboard_swiper") ?? true;
+  const canViewActiveTasks = (effectivePermissions?.includes("dashboard_active_tasks") ?? true)
+    && (effectivePermissions?.includes("view_tickets") ?? true);
+  const canViewMasterRepo = (effectivePermissions?.includes("dashboard_master_repository") ?? true)
+    && (effectivePermissions?.includes("view_knowledge_base") ?? true);
 
   // Fetch carousel images
   const carouselClientId = isBPOAdmin

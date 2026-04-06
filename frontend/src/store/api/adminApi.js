@@ -149,13 +149,23 @@ export const adminApi = createApi({
       providesTags: ["Permissions"],
     }),
 
-    // Get role permissions
+    // Get role permissions (IDs)
     getRolePermissions: builder.query({
       query: (roleId) => `/roles/${roleId}/permissions`,
       transformResponse: (response) =>
         response.permissions?.map((p) => p.permissionId) || [],
       providesTags: (result, error, roleId) => [
         { type: "RolePermissions", id: roleId },
+      ],
+    }),
+
+    // Get role permission names (for View As feature)
+    getRolePermissionNames: builder.query({
+      query: (roleId) => `/roles/${roleId}/permissions`,
+      transformResponse: (response) =>
+        response.permissions?.map((p) => p.permissionName) || [],
+      providesTags: (result, error, roleId) => [
+        { type: "RolePermissions", id: `names-${roleId}` },
       ],
     }),
 
@@ -192,4 +202,5 @@ export const {
   useGetRolePermissionsQuery,
   useLazyGetRolePermissionsQuery,
   useUpdateRolePermissionsMutation,
+  useGetRolePermissionNamesQuery,
 } = adminApi;

@@ -43,6 +43,7 @@
     "html-react-parser": "^5.2.10",
     "i18next": "^25.6.0",
     "pdfjs-dist": "^5.4.394",
+    "powerbi-client": "^2.23.10",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-hook-form": "^7.68.0",

@@ -71,6 +71,35 @@ export async function getPool() {
   return pool;
 }
 
+// Separate pool for KPI queries (paricus_dw_prod database)
+let kpiPool = null;
+
+/**
+ * Get or create SQL Server connection pool for KPI queries (paricus_dw_prod)
+ */
+export async function getKpiPool() {
+  if (!kpiPool) {
+    if (!isMSSQLConfigured()) return null;
+
+    try {
+      const kpiConfig = {
+        ...config,
+        database: process.env.MSSQL_KPI_DATABASE || 'paricus_dw_prod',
+        user: process.env.MSSQL_KPI_USER || config.user,
+        password: process.env.MSSQL_KPI_PASSWORD || config.password,
+      };
+      kpiPool = new sql.ConnectionPool(kpiConfig);
+      await kpiPool.connect();
+      log.info('[MSSQL] KPI pool connected (paricus_dw_prod)');
+    } catch (error) {
+      log.error('[MSSQL] KPI pool connection failed:', error.message);
+      kpiPool = null;
+      throw error;
+    }
+  }
+  return kpiPool;
+}
+
 /**
  * Generate UUID-like ID
  */
