@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Box, Tabs, Tab, Typography } from "@mui/material";
 import {
   Outlet,
@@ -48,6 +48,15 @@ export const DashboardView = () => {
   const [selectedClientId, setSelectedClientId] = useState(null);
   const [selectedUserId, setSelectedUserId] = useState(null);
 
+  // Edit mode for drag-and-drop layout customization
+  const [editMode, setEditMode] = useState(false);
+
+  // Ref to hold reset function from child DashboardViewSelect
+  const resetLayoutRef = useRef(null);
+  const handleResetLayout = useCallback(() => {
+    resetLayoutRef.current?.();
+  }, []);
+
   const handleSelectionChange = ({ clientId, userId }) => {
     setSelectedClientId(clientId);
     setSelectedUserId(userId);
@@ -80,7 +89,12 @@ export const DashboardView = () => {
   return (
     <Box sx={boxTypography.box}>
       {/* Page Header with Selector */}
-      <DashboardHeader onSelectionChange={handleSelectionChange} />
+      <DashboardHeader
+        onSelectionChange={handleSelectionChange}
+        editMode={editMode}
+        setEditMode={setEditMode}
+        onResetLayout={handleResetLayout}
+      />
       {/* Tabs - hidden (mobile uses drawer, desktop shows all content) */}
       <Box sx={{ display: "none" }}>
         <Tabs
@@ -114,7 +128,7 @@ export const DashboardView = () => {
 
       {/* Content - rendered by nested routes */}
       <Box sx={{ overflow: "hidden" }}>
-        <Outlet context={{ selectedClientId, selectedUserId }} />
+        <Outlet context={{ selectedClientId, selectedUserId, editMode, setEditMode, resetLayoutRef }} />
       </Box>
     </Box>
   );

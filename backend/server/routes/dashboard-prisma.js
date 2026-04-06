@@ -1048,4 +1048,152 @@ router.get('/kpis', authenticateToken, async (req, res) => {
   }
 });
 
+// ========================================
+// DASHBOARD LAYOUT CUSTOMIZATION
+// ========================================
+
+const DEFAULT_LAYOUT = [
+  { sectionId: 'kpi_statistics', width: 'full' },
+  { sectionId: 'announcements', width: 'half' },
+  { sectionId: 'swiper', width: 'half' },
+  { sectionId: 'active_tasks', width: 'half' },
+  { sectionId: 'master_repository', width: 'half' },
+];
+
+const VALID_SECTION_IDS = DEFAULT_LAYOUT.map((s) => s.sectionId);
+const VALID_WIDTHS = ['full', 'half'];
+
+/**
+ * GET /api/dashboard/layout
+ * Get dashboard layout for a specific owner
+ * Query params: ownerType, ownerId
+ */
+router.get('/layout', authenticateToken, async (req, res) => {
+  try {
+    const { ownerType, ownerId } = req.query;
+    const { permissions, clientId, userId } = req.user;
+    const isBPOAdmin = permissions.includes('admin_clients');
+
+    if (!ownerType || !ownerId) {
+      return res.status(400).json({ error: 'ownerType and ownerId are required' });
+    }
+
+    // Access control: non-BPO users can only access their own client's layout
+    if (!isBPOAdmin && ownerType === 'client' && parseInt(ownerId) !== clientId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    if (!isBPOAdmin && ownerType === 'super_admin') {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const layout = await prisma.dashboardLayout.findUnique({
+      where: {
+        ownerType_ownerId: {
+          ownerType,
+          ownerId: parseInt(ownerId),
+        },
+      },
+    });
+
+    res.json({
+      success: true,
+      layout: layout?.layout || DEFAULT_LAYOUT,
+      isDefault: !layout,
+    });
+  } catch (error) {
+    log.error('Error fetching dashboard layout:', error);
+    res.status(500).json({ error: 'Failed to fetch dashboard layout' });
+  }
+});
+
+/**
+ * PUT /api/dashboard/layout
+ * Save/update dashboard layout (BPO Admin only)
+ * Body: { ownerType, ownerId, layout }
+ */
+router.put(
+  '/layout',
+  authenticateToken,
+  requirePermission('admin_dashboard_config'),
+  async (req, res) => {
+    try {
+      const { ownerType, ownerId, layout } = req.body;
+
+      if (!ownerType || !ownerId || !layout) {
+        return res.status(400).json({ error: 'ownerType, ownerId, and layout are required' });
+      }
+
+      if (!['super_admin', 'client'].includes(ownerType)) {
+        return res.status(400).json({ error: 'ownerType must be "super_admin" or "client"' });
+      }
+
+      if (!Array.isArray(layout)) {
+        return res.status(400).json({ error: 'layout must be an array' });
+      }
+
+      // Validate each item in layout
+      for (const item of layout) {
+        if (!item.sectionId || !VALID_SECTION_IDS.includes(item.sectionId)) {
+          return res.status(400).json({ error: `Invalid sectionId: ${item.sectionId}` });
+        }
+        if (!item.width || !VALID_WIDTHS.includes(item.width)) {
+          return res.status(400).json({ error: `Invalid width: ${item.width}` });
+        }
+      }
+
+      const saved = await prisma.dashboardLayout.upsert({
+        where: {
+          ownerType_ownerId: {
+            ownerType,
+            ownerId: parseInt(ownerId),
+          },
+        },
+        update: { layout },
+        create: {
+          ownerType,
+          ownerId: parseInt(ownerId),
+          layout,
+        },
+      });
+
+      res.json({ success: true, layout: saved.layout });
+    } catch (error) {
+      log.error('Error saving dashboard layout:', error);
+      res.status(500).json({ error: 'Failed to save dashboard layout' });
+    }
+  }
+);
+
+/**
+ * DELETE /api/dashboard/layout
+ * Reset dashboard layout to default (BPO Admin only)
+ * Query params: ownerType, ownerId
+ */
+router.delete(
+  '/layout',
+  authenticateToken,
+  requirePermission('admin_dashboard_config'),
+  async (req, res) => {
+    try {
+      const { ownerType, ownerId } = req.query;
+
+      if (!ownerType || !ownerId) {
+        return res.status(400).json({ error: 'ownerType and ownerId are required' });
+      }
+
+      await prisma.dashboardLayout.deleteMany({
+        where: {
+          ownerType,
+          ownerId: parseInt(ownerId),
+        },
+      });
+
+      res.json({ success: true, message: 'Layout reset to default' });
+    } catch (error) {
+      log.error('Error resetting dashboard layout:', error);
+      res.status(500).json({ error: 'Failed to reset dashboard layout' });
+    }
+  }
+);
+
 export default router;

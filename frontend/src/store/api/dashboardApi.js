@@ -4,7 +4,7 @@ import { createBaseQuery } from "./baseQuery";
 export const dashboardApi = createApi({
   reducerPath: "dashboardApi",
   baseQuery: createBaseQuery("/dashboard"),
-  tagTypes: ["DashboardStats", "Announcements"],
+  tagTypes: ["DashboardStats", "Announcements", "DashboardLayout"],
   endpoints: (builder) => ({
     // Get dashboard stats
     // Optional clientId param for BPO Admin to view specific client's data
@@ -94,6 +94,46 @@ export const dashboardApi = createApi({
       }),
       invalidatesTags: ["Announcements"],
     }),
+
+    // ========================================
+    // DASHBOARD LAYOUT ENDPOINTS
+    // ========================================
+
+    getDashboardLayout: builder.query({
+      query: ({ ownerType, ownerId }) => ({
+        url: "/layout",
+        params: { ownerType, ownerId },
+      }),
+      transformResponse: (response) => ({
+        layout: response.layout || [],
+        isDefault: response.isDefault ?? true,
+      }),
+      providesTags: (result, error, { ownerType, ownerId }) => [
+        { type: "DashboardLayout", id: `${ownerType}-${ownerId}` },
+      ],
+    }),
+
+    saveDashboardLayout: builder.mutation({
+      query: ({ ownerType, ownerId, layout }) => ({
+        url: "/layout",
+        method: "PUT",
+        body: { ownerType, ownerId, layout },
+      }),
+      invalidatesTags: (result, error, { ownerType, ownerId }) => [
+        { type: "DashboardLayout", id: `${ownerType}-${ownerId}` },
+      ],
+    }),
+
+    resetDashboardLayout: builder.mutation({
+      query: ({ ownerType, ownerId }) => ({
+        url: "/layout",
+        method: "DELETE",
+        params: { ownerType, ownerId },
+      }),
+      invalidatesTags: (result, error, { ownerType, ownerId }) => [
+        { type: "DashboardLayout", id: `${ownerType}-${ownerId}` },
+      ],
+    }),
   }),
 });
 
@@ -105,4 +145,7 @@ export const {
   useGetAnnouncementQuery,
   useCreateAnnouncementMutation,
   useDeleteAnnouncementMutation,
+  useGetDashboardLayoutQuery,
+  useSaveDashboardLayoutMutation,
+  useResetDashboardLayoutMutation,
 } = dashboardApi;

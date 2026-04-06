@@ -10,9 +10,14 @@ import {
   Select,
   MenuItem,
   ListSubheader,
+  Button,
+  Tooltip,
 } from "@mui/material";
+import DashboardCustomizeIcon from "@mui/icons-material/DashboardCustomize";
+import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import {
   boxTypography,
+  colors,
   modalCard,
   selectMenuProps,
 } from "../../../../common/styles/styles";
@@ -29,7 +34,12 @@ import { logger } from "../../../../common/utils/logger";
  * DashboardHeader - Header component with user/client selector for BPO Admin
  * @param {function} onSelectionChange - Callback when selection changes, receives { clientId, userId }
  */
-export const DashboardHeader = ({ onSelectionChange }) => {
+export const DashboardHeader = ({
+  onSelectionChange,
+  editMode,
+  setEditMode,
+  onResetLayout,
+}) => {
   const { t } = useTranslation();
   const [selectedValue, setSelectedValue] = useState("");
 
@@ -244,35 +254,104 @@ export const DashboardHeader = ({ onSelectionChange }) => {
         {/* Loading indicator for selector data */}
         {isLoading && <LoadingProgress size={24} />}
 
-        {/* Grouped Client/User Selector - Only visible for BPO Admin */}
-        {isBPOAdmin &&
-          !isLoading &&
-          !hasError &&
-          clientsWithUsers.length > 0 && (
-            <FormControl sx={{ minWidth: 280 }}>
-              <InputLabel
-                id="dashboard-view-selector-label"
-                sx={modalCard?.multiOptionFilter?.inputLabelSection}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+          {/* Grouped Client/User Selector - Only visible for BPO Admin */}
+          {isBPOAdmin &&
+            !isLoading &&
+            !hasError &&
+            clientsWithUsers.length > 0 && (
+              <FormControl sx={{ minWidth: 280 }}>
+                <InputLabel
+                  id="dashboard-view-selector-label"
+                  sx={modalCard?.multiOptionFilter?.inputLabelSection}
+                >
+                  {t("dashboard.viewAs")}
+                </InputLabel>
+                <Select
+                  labelId="dashboard-view-selector-label"
+                  id="dashboard-view-selector"
+                  value={selectedValue}
+                  onChange={handleChange}
+                  label={t("dashboard.viewAs")}
+                  MenuProps={selectMenuProps}
+                  renderValue={getDisplayValue}
+                  sx={{
+                    ...modalCard?.multiOptionFilter?.selectSection,
+                    height: "3rem",
+                  }}
+                >
+                  {menuItems}
+                </Select>
+              </FormControl>
+            )}
+
+          {/* Customize Layout button - BPO Admin only */}
+          {isBPOAdmin && permissions?.includes("admin_dashboard_config") && (
+            <>
+              {editMode && onResetLayout && (
+                <Tooltip title={t("dashboard.resetLayout")}>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={onResetLayout}
+                    startIcon={<RestartAltIcon />}
+                    sx={{
+                      borderColor: colors.border,
+                      color: colors.textSecondary,
+                      borderRadius: "0.75rem",
+                      textTransform: "none",
+                      height: "2.5rem",
+                      "&:hover": {
+                        borderColor: colors.error,
+                        color: colors.error,
+                      },
+                    }}
+                  >
+                    {t("dashboard.reset")}
+                  </Button>
+                </Tooltip>
+              )}
+              <Tooltip
+                title={
+                  editMode
+                    ? t("dashboard.doneCustomizing")
+                    : t("dashboard.customizeLayout")
+                }
               >
-                {t("dashboard.viewAs")}
-              </InputLabel>
-              <Select
-                labelId="dashboard-view-selector-label"
-                id="dashboard-view-selector"
-                value={selectedValue}
-                onChange={handleChange}
-                label={t("dashboard.viewAs")}
-                MenuProps={selectMenuProps}
-                renderValue={getDisplayValue}
-                sx={{
-                  ...modalCard?.multiOptionFilter?.selectSection,
-                  height: "3rem",
-                }}
-              >
-                {menuItems}
-              </Select>
-            </FormControl>
+                <Button
+                  variant={editMode ? "contained" : "outlined"}
+                  size="small"
+                  onClick={() => setEditMode?.(!editMode)}
+                  startIcon={<DashboardCustomizeIcon />}
+                  sx={{
+                    borderRadius: "0.75rem",
+                    textTransform: "none",
+                    height: "2.5rem",
+                    ...(editMode
+                      ? {
+                          backgroundColor: colors.primary,
+                          "&:hover": {
+                            backgroundColor: colors.primaryDark,
+                          },
+                        }
+                      : {
+                          borderColor: colors.border,
+                          color: colors.textSecondary,
+                          "&:hover": {
+                            borderColor: colors.primary,
+                            color: colors.primary,
+                          },
+                        }),
+                  }}
+                >
+                  {editMode
+                    ? t("dashboard.done")
+                    : t("dashboard.customize")}
+                </Button>
+              </Tooltip>
+            </>
           )}
+        </Box>
       </Box>
 
       {/* Error Snackbar */}
@@ -283,8 +362,14 @@ export const DashboardHeader = ({ onSelectionChange }) => {
 
 DashboardHeader.propTypes = {
   onSelectionChange: PropTypes.func,
+  editMode: PropTypes.bool,
+  setEditMode: PropTypes.func,
+  onResetLayout: PropTypes.func,
 };
 
 DashboardHeader.defaultProps = {
   onSelectionChange: null,
+  editMode: false,
+  setEditMode: null,
+  onResetLayout: null,
 };

@@ -412,6 +412,20 @@ model PowerBIDashboard {
   @@map("powerbi_dashboards")
 }
 
+model DashboardLayout {
+  id        Int      @id @default(autoincrement())
+  ownerType String   @map("owner_type") // "super_admin" | "client"
+  ownerId   Int      @map("owner_id") // userId for super_admin, clientId for client
+  layout    Json // [{ sectionId, width }]
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@unique([ownerType, ownerId])
+  @@index([ownerType])
+  @@index([ownerId])
+  @@map("dashboard_layouts")
+}
+
 model CarouselImage {
   id        Int      @id @default(autoincrement())
   clientId  Int?     @map("client_id")

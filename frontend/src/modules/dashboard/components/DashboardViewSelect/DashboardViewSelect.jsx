@@ -1,4 +1,5 @@
-import { Box, Chip } from "@mui/material";
+import { useEffect } from "react";
+import { Box, Chip, Fade, useMediaQuery, useTheme } from "@mui/material";
 import { useOutletContext, useLocation } from "react-router-dom";
 import { AlertInline } from "../../../../common/components/ui/AlertInline";
 import { useSelector } from "react-redux";
@@ -14,20 +15,25 @@ import { useGetCarouselImagesQuery } from "../../../../store/api/carouselApi";
 import { getAttachmentUrl } from "../../../../common/utils/getAttachmentUrl";
 import { LoadingProgress } from "../../../../common/components/ui/LoadingProgress";
 import { logger } from "../../../../common/utils/logger";
+import { DraggableDashboard } from "../DraggableDashboard";
+import { useDashboardLayout } from "../../hooks/useDashboardLayout";
 
 /**
  * DashboardViewSelect - Displays dashboard content based on selected client/user
- * Desktop: all sections visible (no changes)
+ * Desktop: all sections visible with drag-and-drop reordering (edit mode)
  * Mobile: shows only the active section based on current route
- *   - /kpi → DashboardStatisticsView
- *   - /swiper → SwiperView
- *   - /general-info → AnnouncementsInbox + ActiveTasks + MasterRepository
  */
 export const DashboardViewSelect = () => {
-  const { selectedClientId = null, selectedUserId = null } =
-    useOutletContext() || {};
+  const {
+    selectedClientId = null,
+    selectedUserId = null,
+    editMode = false,
+    resetLayoutRef,
+  } = useOutletContext() || {};
   const { t } = useTranslation();
   const location = useLocation();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   // Determine active mobile section from route
   const section = location.pathname.split("/").pop();
@@ -47,7 +53,7 @@ export const DashboardViewSelect = () => {
   // Use viewed user's permissions when "View As" is active, otherwise own permissions
   const effectivePermissions = (isBPOAdmin && viewAsPermissions) ? viewAsPermissions : permissions;
 
-  // Granular dashboard permissions (must also have the parent module permission)
+  // Granular dashboard permissions
   const canViewDashboard = effectivePermissions?.includes("view_dashboard") ?? true;
   const canViewAnnouncements = effectivePermissions?.includes("dashboard_announcements_inbox") ?? true;
   const canViewSwiper = effectivePermissions?.includes("dashboard_swiper") ?? true;
@@ -60,8 +66,7 @@ export const DashboardViewSelect = () => {
   const carouselClientId = isBPOAdmin
     ? selectedClientId || undefined
     : user?.clientId;
-  const { data: carouselImages = [] } =
-    useGetCarouselImagesQuery(carouselClientId);
+  const { data: carouselImages = [] } = useGetCarouselImagesQuery(carouselClientId);
   const hasCarouselImages = carouselImages.length > 0;
 
   const {
@@ -73,6 +78,23 @@ export const DashboardViewSelect = () => {
     pollingInterval: 300000,
     refetchOnFocus: true,
   });
+
+  // Dashboard layout hook
+  const {
+    layout,
+    setLayout,
+    resetLayout,
+    isLoading: isLayoutLoading,
+    ownerType,
+    ownerId,
+  } = useDashboardLayout({ selectedClientId, selectedUserId });
+
+  // Register reset function to parent via ref
+  useEffect(() => {
+    if (resetLayoutRef) {
+      resetLayoutRef.current = resetLayout;
+    }
+  }, [resetLayout, resetLayoutRef]);
 
   const handleRetry = () => {
     try {
@@ -120,6 +142,41 @@ export const DashboardViewSelect = () => {
     );
   }
 
+  // Build sections map — null values are filtered out by DraggableDashboard
+  const sections = {
+    kpi_statistics: <DashboardStatisticsView />,
+    announcements: canViewAnnouncements ? (
+      <Box sx={{ height: "100%", minHeight: 0, overflow: "hidden" }}>
+        <AnnouncementsInbox />
+      </Box>
+    ) : null,
+    swiper:
+      canViewSwiper && hasCarouselImages ? (
+        <Box sx={{ height: "100%", minHeight: 0, overflow: "hidden" }}>
+          <SwiperView
+            images={Array.from({ length: 4 }, (_, i) => {
+              const img = carouselImages.find((c) => c.slotIndex === i);
+              if (!img) return null;
+              return {
+                previewUrl: getAttachmentUrl(img, token),
+                name: img.fileName,
+              };
+            }).filter(Boolean)}
+          />
+        </Box>
+      ) : null,
+    active_tasks: canViewActiveTasks ? (
+      <ActiveTasks
+        selectedClientId={selectedClientId}
+        selectedUserId={selectedUserId}
+      />
+    ) : null,
+    master_repository: canViewMasterRepo ? <MasterRepository /> : null,
+  };
+
+  // Disable edit mode on mobile
+  const effectiveEditMode = editMode && !isMobile;
+
   return (
     <Box
       sx={{
@@ -139,101 +196,19 @@ export const DashboardViewSelect = () => {
         </Box>
       )}
 
-      {/* Section KPI: Statistics — mobile: only on /kpi, desktop: always */}
-      <Box
-        sx={{
-          display: {
-            xs: section === "kpi" ? "block" : "none",
-            md: "block",
-          },
-        }}
-      >
-        <DashboardStatisticsView />
-      </Box>
-
-      {/* Announcements + Swiper grid — mobile: both on /swiper, desktop: always */}
-      {(canViewAnnouncements || (canViewSwiper && hasCarouselImages)) && (
-        <Box
-          sx={{
-            display: {
-              xs: section === "swiper" ? "grid" : "none",
-              md: "grid",
-            },
-            gridTemplateColumns: {
-              xs: "1fr",
-              lg: canViewAnnouncements && canViewSwiper && hasCarouselImages ? "1fr 1fr" : "1fr",
-            },
-            mb: 3,
-            gap: 3,
-            height: { xs: "auto", md: "32vh" },
-          }}
-        >
-          {canViewAnnouncements && (
-            <Box
-              sx={{
-                display: { xs: "none", md: "flex" },
-                minHeight: 0,
-                overflow: "hidden",
-                width: "100%",
-              }}
-            >
-              <AnnouncementsInbox />
-            </Box>
-          )}
-
-          {canViewSwiper && hasCarouselImages && (
-            <Box sx={{ minHeight: 0, overflow: "hidden" }}>
-              <SwiperView
-                images={Array.from({ length: 4 }, (_, i) => {
-                  const img = carouselImages.find((c) => c.slotIndex === i);
-                  if (!img) return null;
-                  return {
-                    previewUrl: getAttachmentUrl(img, token),
-                    name: img.fileName,
-                  };
-                }).filter(Boolean)}
-              />
-            </Box>
-          )}
-
-          {canViewAnnouncements && (
-            <Box
-              sx={{
-                display: { xs: "flex", md: "none" },
-                minHeight: 0,
-                overflow: "hidden",
-              }}
-            >
-              <AnnouncementsInbox />
-            </Box>
-          )}
+      {/* Dashboard with drag-and-drop support */}
+      <Fade in key={`${ownerType}-${ownerId}`} timeout={300}>
+        <Box>
+          <DraggableDashboard
+            editMode={effectiveEditMode}
+            layout={layout}
+            onLayoutChange={setLayout}
+            sections={sections}
+            mobileSection={section}
+            isLoading={isLayoutLoading}
+          />
         </Box>
-      )}
-
-      {/* Section General Info: Active Tasks + Master Repository */}
-      {(canViewActiveTasks || canViewMasterRepo) && (
-        <Box
-          sx={{
-            display: {
-              xs: section === "general-info" ? "grid" : "none",
-              md: "grid",
-            },
-            gridTemplateColumns: {
-              xs: "1fr",
-              lg: canViewActiveTasks && canViewMasterRepo ? "1fr 1fr" : "1fr",
-            },
-            gap: 3,
-          }}
-        >
-          {canViewActiveTasks && (
-            <ActiveTasks
-              selectedClientId={selectedClientId}
-              selectedUserId={selectedUserId}
-            />
-          )}
-          {canViewMasterRepo && <MasterRepository />}
-        </Box>
-      )}
+      </Fade>
     </Box>
   );
 };
